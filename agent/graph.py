@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 import sys
 from typing import Any
@@ -40,6 +41,9 @@ nvd_tool = NVDTool()
 osv_tool = OSVTool()
 osv_multi_tool = OSVMultiTool()
 registry_tool = RegistryTool()
+
+ENRICHMENT_SOURCE_TIMEOUT_S = float(os.getenv("FLOWRUN_ENRICHMENT_SOURCE_TIMEOUT_S", "4.0"))
+ENRICHMENT_DEADLINE_S = float(os.getenv("FLOWRUN_ENRICHMENT_DEADLINE_S", "8.0"))
 
 
 # ── Regex pre-classification ──────────────────────────────────────────────────
@@ -139,6 +143,7 @@ async def input_node(state: AgentState) -> dict:
         "ioc_type": pre_type or "pending_llm",
         "raw_intel": {},
         "intel_errors": [],
+        "warnings": [],
         "score_breakdown": {},
         "composite_score": 0.0,
         "active_weights": {},
@@ -254,17 +259,38 @@ async def enrichment_node(state: AgentState) -> dict:
         tasks["virustotal_domain"] = vt_tool.ainvoke(domain_from_url)
         tasks["otx_domain"] = otx_tool.ainvoke(domain_from_url)
 
-    # ── Execute all tasks concurrently ─────────────────────────────────────
-    results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+    async def _with_timeout(source: str, aw):
+        try:
+            return await asyncio.wait_for(aw, timeout=ENRICHMENT_SOURCE_TIMEOUT_S)
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(
+                f"source timed out after {ENRICHMENT_SOURCE_TIMEOUT_S:.1f}s ({source})"
+            ) from exc
+
+    wrapped_tasks = {source: _with_timeout(source, aw) for source, aw in tasks.items()}
+    created_tasks = [asyncio.create_task(coro) for coro in wrapped_tasks.values()]
+
+    # ── Execute all tasks concurrently under overall deadline ──────────────
+    try:
+        async with asyncio.timeout(ENRICHMENT_DEADLINE_S):
+            results = await asyncio.gather(*created_tasks, return_exceptions=True)
+    except TimeoutError:
+        for task in created_tasks:
+            if not task.done():
+                task.cancel()
+        results = await asyncio.gather(*created_tasks, return_exceptions=True)
 
     raw_intel: dict[str, Any] = {}
     intel_errors: list[str] = []
+    warnings: list[str] = []
     for source, result in zip(tasks.keys(), results):
         if isinstance(result, Exception):
             # Don't report domain-level failures as errors — the URL-level
             # result is the primary; domain-level is supplementary.
             if not source.endswith("_domain"):
                 intel_errors.append(f"{source}: {type(result).__name__}: {result}")
+                if isinstance(result, TimeoutError):
+                    warnings.append(f"{source} timed out")
         else:
             raw_intel[source] = result
 
@@ -273,7 +299,12 @@ async def enrichment_node(state: AgentState) -> dict:
         _merge_url_domain_results(raw_intel, "virustotal", normalise_virustotal)
         _merge_url_domain_results(raw_intel, "otx", normalise_otx)
 
-    return {"raw_intel": raw_intel, "intel_errors": intel_errors}
+    if len(raw_intel) < len(tasks):
+        warnings.append(
+            f"Enrichment returned partial results ({len(raw_intel)}/{len(tasks)} sources)"
+        )
+
+    return {"raw_intel": raw_intel, "intel_errors": intel_errors, "warnings": warnings}
 
 
 def _merge_url_domain_results(

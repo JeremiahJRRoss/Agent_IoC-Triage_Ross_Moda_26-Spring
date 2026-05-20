@@ -12,6 +12,7 @@
 
 from contextlib import asynccontextmanager
 from pathlib import Path
+from time import perf_counter
 
 import json
 import os
@@ -158,7 +159,9 @@ async def triage_api(request: TriageApiRequest):
         return _error_response(503, "AGENT_UNAVAILABLE", "Agent not initialised.", case_id=request.case_id)
 
     try:
+        started = perf_counter()
         result = await graph.ainvoke({"ioc_raw": ioc})
+        result["total_ms"] = int((perf_counter() - started) * 1000)
         return to_api_response(result, request, execution_mode=ExecutionMode.live)
     except Exception as exc:  # noqa: BLE001
         return _error_response(500, "TRIAGE_FAILED", f"{type(exc).__name__}: {exc}", case_id=request.case_id)

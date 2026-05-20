@@ -17,6 +17,7 @@ class AgentState(TypedDict):
     # ── ENRICHMENT ─────────────────────────────────────────────
     raw_intel: dict[str, Any]           # {source_name: parsed_response_dict}
     intel_errors: list[str]             # Non-fatal: ["abuseipdb: TimeoutError: ...", ...]
+    warnings: list[str]                 # Non-fatal warning messages for response metadata
 
     # ── SCORING ────────────────────────────────────────────────
     score_breakdown: dict[str, float]   # Per-source normalised 0.0–1.0 scores

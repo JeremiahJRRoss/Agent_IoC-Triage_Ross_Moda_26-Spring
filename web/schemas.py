@@ -63,6 +63,10 @@ class TraceInfo(BaseModel):
     trace_endpoint: str | None = None
 
 
+class Timings(BaseModel):
+    total_ms: int = 0
+
+
 class ErrorInfo(BaseModel):
     code: str
     message: str
@@ -85,5 +89,7 @@ class TriageApiResponse(BaseModel):
     raw_intel: dict | None = None
     report_html: str | None = None
     trace: TraceInfo
+    timings: Timings = Timings()
+    warnings: list[str] | None = None
     execution_mode: ExecutionMode = ExecutionMode.live
     fixture_id: str | None = None

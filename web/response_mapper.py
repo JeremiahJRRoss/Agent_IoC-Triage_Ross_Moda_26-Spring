@@ -10,6 +10,7 @@ from web.schemas import (
     TraceInfo,
     TriageApiRequest,
     TriageApiResponse,
+    Timings,
     Verdict,
 )
 
@@ -98,8 +99,12 @@ def to_api_response(
     fixture_id: str | None = None,
 ) -> TriageApiResponse:
     payload = _map_state_to_public_fields(result, request)
+    total_ms = int(_to_float_or_default(result.get("total_ms"), default=0.0))
+    warnings = result.get("warnings") or None
     return TriageApiResponse(
         **payload,
+        timings=Timings(total_ms=max(0, total_ms)),
+        warnings=warnings,
         execution_mode=execution_mode,
         fixture_id=fixture_id,
     )
