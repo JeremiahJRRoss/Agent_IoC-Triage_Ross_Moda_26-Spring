@@ -72,12 +72,20 @@ PY
           mkdir -p artifacts/postman
           set -o pipefail
           newman run postman_collection.json \
+            -e postman_environment.demo.json \
             --env-var "baseUrl=$BASE_URL" \
-            --env-var "iocType=domain" \
             --reporters cli,json,junitfull \
             --reporter-json-export artifacts/postman/newman-report.json \
             --reporter-junitfull-export artifacts/postman/newman-junit.xml \
             | tee artifacts/postman/newman-cli-summary.txt
+
+      - name: Gate on assertion count
+        run: |
+          total=$(jq '.run.stats.assertions.total' artifacts/postman/newman-report.json)
+          failed=$(jq '.run.stats.assertions.failed' artifacts/postman/newman-report.json)
+          echo "Assertions: $total total, $failed failed"
+          test "$total" -ge 25 || { echo "Too few assertions: $total < 25"; exit 1; }
+          test "$failed" -eq 0
 
       - name: Upload Postman artifacts
         if: always()

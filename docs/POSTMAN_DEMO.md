@@ -65,3 +65,143 @@ Pass criteria:
 - Newman exits with code `0` (all requests pass).
 - Newman reports `0` failed assertions.
 - Health latency check passes when threshold is applied.
+
+
+## Demo modes
+
+`POST /api/v1/triage` resolves exactly one execution mode per request. The
+client never picks the mode — the server decides it. The collection asserts
+the resolved mode on every triage request.
+
+| Mode | Trigger condition | What runs | `execution_mode` | `fixture_id` |
+|------|-------------------|-----------|------------------|--------------|
+| `live` | Default — no `FLOWRUN_DEMO_MODE`, normal triage endpoint | Real LangGraph agent against configured threat-intel integrations | `"live"` | `null` |
+| `demo` | `FLOWRUN_DEMO_MODE=true` env var set on the server | Deterministic fixture lookup under `fixtures/demo/`; missing fixture → hard `503` | `"demo"` | fixture key, e.g. `default__domain`, `default__ip` |
+| `mock` | Request sent to `POST /api/v1/triage/mock` | Returns the canned `fixtures/demo/mock.json` payload, independent of `FLOWRUN_DEMO_MODE` | `"mock"` | `"mock"` |
+
+Precedence is strict: in demo mode an unresolved fixture is a
+`503 DEMO_FIXTURE_MISSING`, never a silent fall-through to a live call.
+
+
+## Worked scenarios
+
+All commands assume a server started with `FLOWRUN_DEMO_MODE=true` on
+`127.0.0.1:7777`. Expected-output blocks are truncated for brevity.
+
+### 1. Healthy triage of a known fixture (`domain`)
+
+Why it matters: proves the demo happy path — a fixtured IOC returns a complete
+`TriageApiResponse` with `execution_mode=demo`.
+
+```bash
+curl -s -X POST http://127.0.0.1:7777/api/v1/triage \
+  -H "Content-Type: application/json" \
+  -d '{"ioc":"malware.wicar.org","case_id":"CASE-1001"}'
+```
+
+```json
+{
+  "case_id": "CASE-1001",
+  "ioc": {"raw": "malware.wicar.org", "clean": "malware.wicar.org", "type": "domain"},
+  "verdict": {"severity": "MEDIUM", "score": 0.55, "escalation_required": false},
+  "execution_mode": "demo",
+  "fixture_id": "default__domain"
+}
+```
+
+### 2. Schema-only validation via mock mode
+
+Why it matters: `POST /api/v1/triage/mock` always returns the same canned
+payload, so contract/schema checks never depend on per-IOC fixtures.
+
+```bash
+curl -s -X POST http://127.0.0.1:7777/api/v1/triage/mock \
+  -H "Content-Type: application/json" \
+  -d '{"ioc":"schema-check.example"}'
+```
+
+```json
+{
+  "ioc": {"raw": "example.local", "clean": "example.local", "type": "domain"},
+  "verdict": {"severity": "LOW", "score": 0.2},
+  "execution_mode": "mock",
+  "fixture_id": "mock"
+}
+```
+
+### 3. Fixture miss in demo mode → 503
+
+Why it matters: proves mode precedence is strict. A CVE is classified fine but
+has no demo fixture — demo mode hard-fails instead of degrading to a live call.
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  http://127.0.0.1:7777/api/v1/triage \
+  -H "Content-Type: application/json" \
+  -d '{"ioc":"CVE-2021-44228"}'
+```
+
+```json
+{
+  "error": {
+    "code": "DEMO_FIXTURE_MISSING",
+    "message": "demo fixture missing for 'CVE-2021-44228'. Checked: cve__cve-2021-44228, default__cve"
+  }
+}
+```
+
+### 4. Empty IOC → 400
+
+Why it matters: a whitespace-only IOC passes Pydantic `minLength` but is
+rejected by the handler with a structured `IOC_EMPTY` error.
+
+```bash
+curl -s -X POST http://127.0.0.1:7777/api/v1/triage \
+  -H "Content-Type: application/json" \
+  -d '{"ioc":"   "}'
+```
+
+```json
+{
+  "error": {"code": "IOC_EMPTY", "message": "IOC must not be empty", "details": null},
+  "case_id": null,
+  "trace": {"trace_endpoint": null}
+}
+```
+
+### 5. `case_id` propagation
+
+Why it matters: a `case_id` supplied in the request is echoed back verbatim,
+letting a SOC correlate a triage result with its originating case.
+
+```bash
+curl -s -X POST http://127.0.0.1:7777/api/v1/triage \
+  -H "Content-Type: application/json" \
+  -d '{"ioc":"8.8.8.8","case_id":"CASE-ROUNDTRIP-7777"}'
+```
+
+```json
+{
+  "case_id": "CASE-ROUNDTRIP-7777",
+  "ioc": {"raw": "8.8.8.8", "clean": "8.8.8.8", "type": "ip"},
+  "execution_mode": "demo",
+  "fixture_id": "default__ip"
+}
+```
+
+
+## Reading the artifacts
+
+A full Newman run writes three artifacts under `artifacts/postman/`:
+
+- **`newman-junit.xml`** — JUnit XML. Each `<testcase>` is one `pm.test(...)`
+  assertion; its `name` is the assertion label and its parent `<testsuite>` is
+  the request. A `<failure>` child marks a failed assertion. CI test-result
+  viewers and IDEs parse this file directly.
+- **`newman-report.json`** — the machine-readable run report. The key object is
+  `run.stats.assertions` (`{total, pending, failed}`); `run.failures[]` lists
+  any failed assertions with their error. The CI assertion-count gate reads
+  `total` and `failed` from here.
+- **`newman-cli-summary.txt`** — the plain-text CLI summary (the boxed table
+  Newman prints). This is where a human looks **first** — it shows the per-folder
+  pass/fail ticks and the final totals at a glance.
