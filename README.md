@@ -176,3 +176,14 @@ No other file needs to change.
 - **Added**: All documentation bundled in `docs/` folder
 - **Added**: Quick Start guide with troubleshooting table
 - **Updated**: Notebook includes kernel selection guidance and test IOC suggestions
+
+
+## API Execution Mode Precedence
+
+The API has deterministic execution priority:
+
+1. `FLOWRUN_DEMO_MODE=true` → `/api/v1/triage` resolves fixtures only by IOC type + canonical IOC key (then optional type default), and raises an explicit missing-fixture error if unresolved.
+2. `/api/v1/triage/mock` → returns a canned mock fixture only (`fixtures/demo/mock.json`).
+3. Live mode (default) → `/api/v1/triage` runs real integrations.
+
+Responses include `execution_mode` (`demo`, `mock`, or `live`) and `fixture_id` when a fixture is used, so Postman assertions can validate mode selection deterministically.

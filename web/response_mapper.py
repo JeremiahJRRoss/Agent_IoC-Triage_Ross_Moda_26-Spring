@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from agent.graph import _normalise_ioc, _regex_classify
+
 from web.schemas import (
     ExecutionMode,
     IocIdentity,
@@ -42,12 +44,17 @@ def to_api_response(
     severity = SeverityBand(result.get("severity_band", "LOW").upper())
     score = max(0.0, min(1.0, float(result.get("composite_score", 0.0))))
 
+    raw_ioc = result.get("ioc_raw", request.ioc)
+    inferred_type = _regex_classify(request.ioc.strip()) or "unknown"
+    ioc_type = result.get("ioc_type") or inferred_type
+    clean_ioc = result.get("ioc_clean") or _normalise_ioc(request.ioc.strip(), ioc_type)
+
     return TriageApiResponse(
         case_id=request.case_id,
         ioc=IocIdentity(
-            raw=result.get("ioc_raw", request.ioc),
-            clean=result.get("ioc_clean", request.ioc),
-            type=result.get("ioc_type", "unknown"),
+            raw=raw_ioc,
+            clean=clean_ioc,
+            type=ioc_type,
         ),
         verdict=Verdict(
             severity=severity,

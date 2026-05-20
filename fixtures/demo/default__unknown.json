@@ -1,0 +1,14 @@
+{
+  "ioc_raw": "example.local",
+  "ioc_clean": "example.local",
+  "ioc_type": "domain",
+  "raw_intel": {"mockintel": {"signal": "low"}},
+  "intel_errors": [],
+  "score_breakdown": {"mockintel": 0.2},
+  "composite_score": 0.2,
+  "severity_band": "LOW",
+  "verdict_justification": "Deterministic demo fixture result.",
+  "escalation_required": false,
+  "report_html": "<p>Demo report</p>",
+  "trace_endpoint": "http://localhost:4318"
+}
