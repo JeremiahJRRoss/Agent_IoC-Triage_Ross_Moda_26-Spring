@@ -90,11 +90,17 @@ Every report includes:
 
 **4.1 Starting the Agent**
 
-Ensure all environment variables are configured (see Section 8), then: `python flowrun_agent.py`
+Configure your API keys (see Section 8), then start the container stack from the project root with Docker or Podman:
+
+```bash
+docker compose up --build -d      # or: podman compose up --build -d
+```
+
+The image builds on the first run and is reused afterward. Open <http://localhost:7777> in a browser. Stop the stack with `docker compose down` (or `podman compose down`).
 
 **4.2 Submitting an IOC**
 
-Type or paste your IOC and press Enter. The agent automatically detects the type.
+Paste your IOC into the web UI's input field and click **Triage**. The agent automatically detects the type and renders the full report inline below the form.
 
 | **IOC Type**                      | **Example Input**                                              |
 |-----------------------------------|----------------------------------------------------------------|
@@ -128,7 +134,7 @@ The agent is built as a LangGraph StateGraph with 8 nodes. Each node reads from 
 | **4. CORRELATION NODE** | Applies weighted scoring: selects weight set by IOC type, normalises each source, detects conflicting signals, computes composite score. |
 | **5. SEVERITY NODE**    | Maps composite score to CLEAN/LOW/MEDIUM/HIGH/CRITICAL. Generates justification.                                            |
 | **6. REPORT NODE**      | GPT-4o (temperature=0.3) synthesises correlation summary. Formats report with TL;DR, detection names, conflict callouts.     |
-| **7. ESCALATION GATE**  | CRITICAL verdicts: CLI → confirmation prompt; Jupyter → auto-proceeds with warning.                                          |
+| **7. ESCALATION GATE**  | CRITICAL verdicts route through a human-in-the-loop gate. The container has no interactive TTY, so the gate auto-proceeds and the report carries a prominent CRITICAL banner for the analyst to act on. |
 | **8. ERROR NODE**       | Handles unrecognised IOC types with clear error message.                                                                     |
 
 
@@ -138,7 +144,7 @@ The agent is built as a LangGraph StateGraph with 8 nodes. Each node reads from 
 
 | **Layer**               | **Components**                                                                          |
 |-------------------------|-----------------------------------------------------------------------------------------|
-| **Interaction Layer**   | CLI interactive loop + Jupyter Notebook (ipywidgets)                                    |
+| **Interaction Layer**   | Web UI — FastAPI + htmx, served on port 7777                                            |
 | **Agent Orchestration** | LangGraph StateGraph — node execution, conditional routing, shared state                |
 | **LLM & Tool Layer**    | LangChain tool wrappers for 9 APIs. OpenAI GPT-4o-mini (classifier) + GPT-4o (report). All model config in agent/llm.py. |
 | **Intelligence Layer**  | VirusTotal, AbuseIPDB, OTX, urlscan.io, NIST NVD, OSV.dev, npm Registry, PyPI JSON API |
@@ -154,7 +160,7 @@ The agent is built as a LangGraph StateGraph with 8 nodes. Each node reads from 
 | **HTTP Client**             | httpx 0.27+ (async) — all API calls                                     |
 | **Threat Intel APIs**       | VirusTotal, AbuseIPDB, OTX, urlscan.io, NIST NVD, OSV.dev, npm, PyPI   |
 | **Observability**           | OpenTelemetry via Traceloop SDK (OpenLLMetry) — OTLP/HTTP exporter      |
-| **Language / Runtime**      | Python 3.11+ (tested on 3.14) with asyncio                              |
+| **Language / Runtime**      | Python 3.11 (`python:3.11-slim` container image) with asyncio           |
 
 
 ## 7. Minimum Requirements
@@ -164,7 +170,7 @@ The agent is built as a LangGraph StateGraph with 8 nodes. Each node reads from 
 | **Requirement**      | **Specification**                                                       |
 |----------------------|-------------------------------------------------------------------------|
 | **Operating System** | macOS 12+, Ubuntu 20.04+, or Windows 10+ (via WSL2)                     |
-| **Python Version**   | Python 3.11 or higher (tested on 3.14)                                  |
+| **Container Engine** | Docker 20.10+ or Podman 4.0+, with Compose support                      |
 | **RAM**              | Minimum 4 GB (8 GB recommended)                                         |
 | **Network**          | Outbound HTTPS to api.openai.com, virustotal.com, abuseipdb.com, otx.alienvault.com, urlscan.io, nvd.nist.gov, api.osv.dev, registry.npmjs.org, pypi.org. Outbound OTLP/HTTP to the configured collector (default localhost:4318). |
 
@@ -180,24 +186,20 @@ The agent is built as a LangGraph StateGraph with 8 nodes. Each node reads from 
 
 Note: OSV.dev, npm registry, and PyPI JSON API require no API keys. OpenTelemetry tracing is fully optional — by default spans are shipped to a local collector on `http://localhost:4318` and the export fails silently if no collector is running.
 
-**7.3 Python Dependencies**
+**7.3 Dependencies**
 
-```
-pip install langgraph langchain langchain-openai openai httpx traceloop-sdk opentelemetry-sdk opentelemetry-exporter-otlp-proto-http python-dotenv ipywidgets
-```
+All Python dependencies are pinned in `requirements.txt` and installed into the container image at build time — there is nothing to install on the host.
 
 
 ## 8. How to Set Up Your API Keys
 
-The agent never hardcodes API keys. Keys are handled via secure interactive prompt or .env file.
+The agent never hardcodes API keys. The container reads them from a `.env` file in the project root, which `compose.yaml` injects at startup.
 
-**8.1 Option A — Interactive Prompt (First Run)**
+Copy the template and fill in your five keys:
 
-Launch without a .env file and enter each key when prompted (masked input, stored in memory only).
-
-**8.2 Option B — .env File (Daily Use)**
-
-Create `.env` in the project root:
+```bash
+cp .env.template .env
+```
 
 ```
 OPENAI_API_KEY=paste_your_key_here
@@ -206,46 +208,26 @@ ABUSEIPDB_API_KEY=paste_your_key_here
 OTX_API_KEY=paste_your_key_here
 URLSCAN_API_KEY=paste_your_key_here
 
-# Optional — override the default local OTLP collector destination:
-# OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+# Optional — override the default OTLP collector destination:
+# OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318
 # OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer your_token
 # OTEL_SERVICE_NAME=flowrun-streamlet-ioc-triage
 ```
 
-No quotes around values. Add `.env` to `.gitignore`. Never share, commit, or paste into chat.
+No quotes around values, no trailing spaces. `.env` is gitignored — never share, commit, or paste it into chat.
+
+`.env` is optional: the container starts without it, but live triage needs all five keys. Demo mode (`FLOWRUN_DEMO_MODE=true`) needs none — it serves triage from local fixtures.
 
 
-## 9. Using the Jupyter Notebook
+## 9. Troubleshooting
 
-**9.1 Prerequisites**
-
-```bash
-pip install notebook ipykernel langgraph langchain langchain-openai openai httpx traceloop-sdk opentelemetry-sdk opentelemetry-exporter-otlp-proto-http python-dotenv ipywidgets
-```
-
-> **Important: Register Virtual Environment as Jupyter Kernel**
-> ```bash
-> source .venv/bin/activate
-> pip install ipykernel
-> python -m ipykernel install --user --name=flowrun --display-name="FlowRun (venv)"
-> ```
-> Then in notebook: Kernel → Change kernel → select "FlowRun (venv)".
-
-**9.2 Notebook Cell Structure**
-
-| **Cell** | **Purpose**                                                                |
-|----------|----------------------------------------------------------------------------|
-| Cell 1   | Install & Import — all required libraries                                 |
-| Cell 2   | API Key Setup — getpass() or load_dotenv()                                |
-| Cell 3   | OpenTelemetry Tracing Init                                                |
-| Cell 4   | Tool Definitions — instantiates all LangChain tools                       |
-| Cell 5   | Graph Compilation                                                         |
-| Cell 6   | IOC Input Widget — text field + Analyze button. Results render inline.     |
-| Cell 7   | Report Display — rendered inline in Cell 6's output area                  |
-| Cell 8   | Trace Destination — prints the active OTLP endpoint                       |
-
-> **Tip — Kernel Restart**
-> If the agent hangs: Kernel → Restart & Clear Output, verify "FlowRun (venv)" is selected, re-run from Cell 1.
+| Problem | Solution |
+|---------|----------|
+| `neither 'docker' nor 'podman' was found` from `scripts/compose.sh` | Install Docker 20.10+ or Podman 4.0+, or set `CONTAINER_ENGINE` to the engine you want to use. |
+| Port 7777 already in use | Stop the conflicting process, or change the `ports:` mapping in `compose.yaml`. |
+| `Required API keys not provided` in the container logs | One or more keys are missing from `.env` — check Section 8; no quotes, no trailing spaces. |
+| Triage requests fail but the UI loads | The container started without valid keys. Fix `.env`, then re-run `docker compose up --build -d`. |
+| Inspect container logs | `docker compose logs -f` (or `podman compose logs -f`). |
 
 ---
 

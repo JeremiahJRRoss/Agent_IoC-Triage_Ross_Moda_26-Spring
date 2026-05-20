@@ -14,8 +14,12 @@ services:
     restart: unless-stopped
     ports:
       - "7777:7777"
+    # .env is optional: when absent the container still starts (live triage
+    # then fails fast on missing keys; demo mode needs none). Copy
+    # .env.template to .env to supply live API keys.
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       # Default OTLP destination is a collector running on the host. Works on
       # Docker Desktop out of the box; works on rootless Podman and native
@@ -24,6 +28,10 @@ services:
       # disable tracing — tracing failure is non-blocking (NFR-07).
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://host.docker.internal:4318"
       FLOWRUN_NO_PROMPT: "1"
+      # FLOWRUN_DEMO_MODE=true serves POST /api/v1/triage from local fixtures
+      # only — no API keys, no live calls. Set it in your shell or .env:
+      #   FLOWRUN_DEMO_MODE=true docker compose up --build -d
+      FLOWRUN_DEMO_MODE: "${FLOWRUN_DEMO_MODE:-false}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:

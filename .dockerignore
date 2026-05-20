@@ -1,0 +1,33 @@
+# Build context exclusions. The image installs dependencies from
+# requirements.txt and COPYs only agent/, web/, fixtures/, and
+# flowrun_agent.py — everything below is dev-only or never used at runtime.
+
+.git
+.gitignore
+.github
+.dockerignore
+
+# Local Python dev artifacts
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.ipynb_checkpoints
+
+# Secrets — never bake into the image
+.env
+.env.*
+
+# Not needed at runtime
+tests
+docs
+demo
+artifacts
+flowrun_agent.ipynb
+postman_collection.json
+postman_environment*.json
+*.md
+LICENSE

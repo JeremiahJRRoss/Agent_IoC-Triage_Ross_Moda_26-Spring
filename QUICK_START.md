@@ -1,22 +1,23 @@
 # FlowRun Streamlet: IoC Triage — Quick Start Guide
 
-> **Containerized deployment is the default path** — see [the container Quick Start in README.md](README.md#quick-start-container--default) for the wrapper `./scripts/compose.sh up` flow plus native `docker compose up` / `podman compose up` alternatives. The walkthrough below is for running the CLI or notebook directly on your host.
+FlowRun ships as a container image with a small web UI on **port 7777**.
+Everything below works identically with **Docker** or **Podman** — pick one.
 
-## 1. Extract and enter the project
+## 1. Prerequisites
+
+| Engine | Minimum version | Compose support |
+|--------|-----------------|-----------------|
+| Docker | 20.10+          | `docker compose` (Compose v2) |
+| Podman | 4.0+            | `podman compose` |
+
+No Python, virtualenv, or local dependency install is required — the image
+bundles everything.
+
+## 2. Extract and enter the project
 
 ```bash
 tar xzf flowrun-streamlet-ioc-triage.tar.gz
 cd flowrun-streamlet-ioc-triage
-```
-
-## 2. Create a virtual environment and install dependencies
-
-```bash
-python3 -m venv .venv            # Python 3.11 or newer (tested on 3.14)
-source .venv/bin/activate        # macOS / Linux
-# .venv\Scripts\activate          # Windows
-
-pip install -r requirements.txt
 ```
 
 ## 3. Set up your API keys
@@ -37,7 +38,8 @@ OTX_API_KEY=your-otx-key-here
 URLSCAN_API_KEY=your-urlscan-key-here
 ```
 
-If you skip the `.env` file, the agent will prompt you for each key interactively at startup.
+`.env` is optional — the container still starts without it — but live triage
+needs all five keys. (Demo mode, see Step 6, needs none.)
 
 ### Where to get your API keys
 
@@ -49,66 +51,83 @@ If you skip the `.env` file, the agent will prompt you for each key interactivel
 | OTX_API_KEY | [otx.alienvault.com → Settings → API Key](https://otx.alienvault.com) |
 | URLSCAN_API_KEY | [urlscan.io → Settings → API Keys](https://urlscan.io) |
 
-### Tracing (optional)
+## 4. Start the stack
 
-By default the agent ships OpenTelemetry spans via OTLP/HTTP to `http://localhost:4318` — the standard port for a local OpenTelemetry collector agent. If you don't have a collector running locally, that's fine; tracing fails silently and triage continues normally.
-
-To send traces somewhere else, set `OTEL_EXPORTER_OTLP_ENDPOINT` (and optionally `OTEL_EXPORTER_OTLP_HEADERS` for authenticated backends) in your `.env`:
-
-```
-# OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
-# OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer your_token
-# OTEL_SERVICE_NAME=flowrun-streamlet-ioc-triage
-```
-
-## 4. Run the CLI
+The image builds from the local `Dockerfile` on the first run and is reused
+afterward. Pick whichever command matches your engine:
 
 ```bash
-source .venv/bin/activate
-python flowrun_agent.py
+# Wrapper script — auto-detects Docker or Podman
+./scripts/compose.sh up --build -d
+
+# Native Docker Compose
+docker compose up --build -d
+
+# Native Podman Compose
+podman compose up --build -d
 ```
 
-Type or paste any IOC (IP, domain, URL, file hash, CVE, or package) at the `IOC ▶` prompt and press Enter.
+Then open <http://localhost:7777>.
+
+## 5. Use the web UI
+
+Paste any IOC into the input field and click **Triage**. The agent classifies
+the IOC, queries the threat-intelligence sources, and renders the full report
+inline below the form.
+
+Supported IOC types — IP, domain, URL, file hash (MD5/SHA-1/SHA-256), CVE
+identifier, or software package.
 
 Example package IOC:
 ```
 npm:postmark-mcp
 ```
 
-## 5. Run the Jupyter Notebook
+## 6. Run the Postman demo (optional)
 
-### First-time setup: register the virtual environment as a Jupyter kernel
-
-Jupyter does not automatically use your virtual environment's packages. You must register it as a kernel once:
+Demo mode serves `POST /api/v1/triage` from local fixtures only — no API keys,
+no live calls. Start the stack with `FLOWRUN_DEMO_MODE=true`:
 
 ```bash
-source .venv/bin/activate
-pip install ipykernel
-python -m ipykernel install --user --name=flowrun --display-name="FlowRun (venv)"
+FLOWRUN_DEMO_MODE=true docker compose up --build -d
+# Podman:  FLOWRUN_DEMO_MODE=true podman compose up --build -d
+# Wrapper: FLOWRUN_DEMO_MODE=true ./scripts/compose.sh up --build -d
 ```
 
-### Launch the notebook
+The full demo runbook lives in [`demo/POSTMAN_DEMO_INSTRUCTIONS.md`](demo/POSTMAN_DEMO_INSTRUCTIONS.md).
+
+## 7. Stop the stack
 
 ```bash
-jupyter notebook flowrun_agent.ipynb
+./scripts/compose.sh down
+# or native commands:
+# docker compose down
+# podman compose down
 ```
 
-**Before running any cells**, go to **Kernel → Change kernel** and select **"FlowRun (venv)"**.
+## 8. Tracing (optional)
 
-Then run cells 1 through 5 in order to initialise the environment, and use Cell 6 to submit IOCs for triage.
+By default the container ships OpenTelemetry spans via OTLP/HTTP to
+`http://host.docker.internal:4318` — your host machine's local OpenTelemetry
+collector port. If no collector is running, tracing fails silently and triage
+continues normally.
 
-## 6. Run the test suite
+To send traces somewhere else, set `OTEL_EXPORTER_OTLP_ENDPOINT` (and optionally
+`OTEL_EXPORTER_OTLP_HEADERS` for authenticated backends) in your `.env`:
 
-```bash
-source .venv/bin/activate
-pytest tests/ -v
+```
+# OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318
+# OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer your_token
+# OTEL_SERVICE_NAME=flowrun-streamlet-ioc-triage
 ```
 
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
-| `ModuleNotFoundError: No module named 'langgraph'` in Jupyter | You need to register the venv kernel — see Step 5 above |
-| API key errors at startup | Check your `.env` file has no quotes around values and no trailing spaces |
-| `EnvironmentError: Required API keys not provided` | One or more keys are missing — check the list above |
-| Cell hangs or behaves unexpectedly | Use Kernel → Restart & Clear Output, verify the "FlowRun (venv)" kernel is selected, then re-run from Cell 1 |
+| `neither 'docker' nor 'podman' was found` (wrapper) | Install Docker 20.10+ or Podman 4.0+, or set `CONTAINER_ENGINE` to the engine you want |
+| Port 7777 already in use | Stop the other process, or edit the `ports:` mapping in `compose.yaml` |
+| `Required API keys not provided` in logs | One or more keys missing from `.env` — check the list in Step 3, no quotes, no trailing spaces |
+| Triage requests fail but the UI loads | The container started without valid keys — fix `.env` and re-run `compose ... up --build -d` |
+| Want to inspect logs | `./scripts/compose.sh logs -f` (or `docker compose logs -f` / `podman compose logs -f`) |
+| Rebuild from scratch | `./scripts/compose.sh down` then `./scripts/compose.sh up --build -d` |
