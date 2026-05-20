@@ -1,0 +1,78 @@
+{
+  "info": {
+    "name": "FlowRun IoC Triage API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Example by Type",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/examples/{{iocType}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "examples",
+            "{{iocType}}"
+          ]
+        },
+        "description": "Single source of truth for sample triage payloads lives in fixtures/examples/*.json via server endpoint."
+      }
+    },
+    {
+      "name": "Triage (using fixture example)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{examplePayload}}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/triage",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "triage"
+          ]
+        },
+        "description": "Use pre-request script below to load canonical fixture payload from /api/v1/examples/{type}."
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const baseUrl = pm.variables.get('baseUrl');",
+              "const iocType = pm.variables.get('iocType') || 'domain';",
+              "pm.sendRequest(`${baseUrl}/api/v1/examples/${iocType}`, (err, res) => {",
+              "  if (err) { throw err; }",
+              "  const body = res.json();",
+              "  pm.variables.set('examplePayload', JSON.stringify(body.payload));",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:7777"},
+    {"key": "iocType", "value": "domain"},
+    {"key": "examplePayload", "value": "{}"}
+  ]
+}
