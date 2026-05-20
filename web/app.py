@@ -63,11 +63,61 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="FlowRun Streamlet: IoC Triage", lifespan=lifespan)
+_API_DESCRIPTION = """\
+FlowRun Streamlet automated IoC triage API.
+
+Submit an indicator of compromise (IP, domain, URL, file hash, CVE, or
+software package) and receive a structured threat verdict with a weighted
+composite score, a severity band, and recommended actions.
+
+### Execution modes
+
+The API resolves exactly one execution mode per request. Precedence is
+strict and decided server-side — clients never choose the mode directly:
+
+1. **demo** — when `FLOWRUN_DEMO_MODE=true`, `POST /api/v1/triage` serves
+   deterministic fixtures only and never calls live threat-intel APIs. A
+   missing fixture is a hard `503 DEMO_FIXTURE_MISSING`, never a silent
+   fallthrough to live mode.
+2. **mock** — `POST /api/v1/triage/mock` always returns the canned
+   `fixtures/demo/mock.json` payload, independent of the environment. Use it
+   for schema-only contract checks.
+3. **live** — the default. `POST /api/v1/triage` runs the real LangGraph
+   agent against the configured threat-intel integrations.
+
+Every triage response carries `execution_mode` and (for demo/mock)
+`fixture_id`, so clients can assert which path produced the result.
+
+See `docs/API.md` for the full reference.
+"""
+
+_OPENAPI_TAGS = [
+    {"name": "Liveness", "description": "Container health and readiness probes."},
+    {"name": "UI", "description": "Browser-facing htmx triage interface."},
+    {"name": "Examples", "description": "Canonical sample triage payloads sourced from fixtures/examples."},
+    {"name": "Triage", "description": "IoC triage endpoints across the live, demo, and mock execution modes."},
+]
+
+app = FastAPI(
+    title="FlowRun Streamlet: IoC Triage",
+    description=_API_DESCRIPTION,
+    version="0.0.33",
+    openapi_tags=_OPENAPI_TAGS,
+    lifespan=lifespan,
+)
 app.mount("/static", StaticFiles(directory=str(_WEB_DIR / "static")), name="static")
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    tags=["Liveness"],
+    summary="Liveness probe",
+    description=(
+        "Returns service status and the active OpenTelemetry trace endpoint.\n\n"
+        "Used by container orchestrators as a liveness/readiness probe. Always\n"
+        "cheap: performs no agent work and makes no external calls."
+    ),
+)
 async def health():
     return {
         "status": "ok",
@@ -75,7 +125,13 @@ async def health():
     }
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get(
+    "/",
+    response_class=HTMLResponse,
+    tags=["UI"],
+    summary="Triage web UI",
+    description="Serves the minimal htmx-driven single-page triage form.",
+)
 async def index(request: Request):
     return templates.TemplateResponse(
         request,
@@ -84,7 +140,22 @@ async def index(request: Request):
     )
 
 
-@app.post("/triage", response_class=HTMLResponse)
+@app.post(
+    "/triage",
+    response_class=HTMLResponse,
+    tags=["UI"],
+    summary="Submit an IOC from the web UI",
+    description=(
+        "Form-encoded triage submission used by the htmx UI. Returns an HTML\n"
+        "report fragment for inline rendering. For programmatic access use\n"
+        "POST /api/v1/triage, which returns structured JSON instead."
+    ),
+    responses={
+        400: {"description": "Empty IOC submitted.", "content": {"text/html": {}}},
+        500: {"description": "Triage execution failed.", "content": {"text/html": {}}},
+        503: {"description": "Agent not initialised.", "content": {"text/html": {}}},
+    },
+)
 async def triage(ioc: str = Form(...)):
     ioc = (ioc or "").strip()
     if not ioc:
@@ -120,7 +191,28 @@ async def triage(ioc: str = Form(...)):
     )
 
 
-@app.get("/api/v1/examples/{example_type}", response_model=ExampleApiResponse)
+@app.get(
+    "/api/v1/examples/{example_type}",
+    response_model=ExampleApiResponse,
+    tags=["Examples"],
+    summary="Fetch a canonical example payload",
+    description=(
+        "Returns a ready-to-POST triage request body for the given IOC type,\n"
+        "sourced from fixtures/examples/*.json. This is the single source of\n"
+        "truth for sample payloads — Postman requests and docs chain off it\n"
+        "rather than hand-coding JSON."
+    ),
+    responses={
+        404: {
+            "model": ApiErrorResponse,
+            "description": "Unknown IOC type or missing example fixture (EXAMPLE_NOT_FOUND).",
+        },
+        500: {
+            "model": ApiErrorResponse,
+            "description": "Example fixture failed schema validation (EXAMPLE_INVALID).",
+        },
+    },
+)
 async def triage_example(example_type: str):
     try:
         parsed_type = ExampleType(example_type)
@@ -136,7 +228,33 @@ async def triage_example(example_type: str):
     return {"type": parsed_type, "payload": payload, "notes": None}
 
 
-@app.post("/api/v1/triage", response_model=TriageApiResponse)
+@app.post(
+    "/api/v1/triage",
+    response_model=TriageApiResponse,
+    tags=["Triage"],
+    summary="Triage an IOC",
+    description=(
+        "Runs IoC triage and returns a structured verdict.\n\n"
+        "Behavior depends on the resolved execution mode: with\n"
+        "FLOWRUN_DEMO_MODE=true the response is served from a deterministic\n"
+        "fixture (execution_mode=demo) and a missing fixture is a hard 503;\n"
+        "otherwise the live LangGraph agent runs (execution_mode=live)."
+    ),
+    responses={
+        400: {
+            "model": ApiErrorResponse,
+            "description": "IOC was empty (IOC_EMPTY).",
+        },
+        500: {
+            "model": ApiErrorResponse,
+            "description": "Live triage raised an unexpected error (TRIAGE_FAILED).",
+        },
+        503: {
+            "model": ApiErrorResponse,
+            "description": "Demo fixture missing (DEMO_FIXTURE_MISSING) or agent not initialised (AGENT_UNAVAILABLE).",
+        },
+    },
+)
 async def triage_api(request: TriageApiRequest):
     ioc = request.ioc.strip()
     if not ioc:
@@ -167,7 +285,24 @@ async def triage_api(request: TriageApiRequest):
         return _error_response(500, "TRIAGE_FAILED", f"{type(exc).__name__}: {exc}", case_id=request.case_id)
 
 
-@app.post("/api/v1/triage/mock", response_model=TriageApiResponse)
+@app.post(
+    "/api/v1/triage/mock",
+    response_model=TriageApiResponse,
+    tags=["Triage"],
+    summary="Triage against the mock fixture",
+    description=(
+        "Always returns the canned fixtures/demo/mock.json payload with\n"
+        "execution_mode=mock and fixture_id=mock. Independent of\n"
+        "FLOWRUN_DEMO_MODE — use it for schema and contract checks that must\n"
+        "not depend on per-IOC fixtures."
+    ),
+    responses={
+        503: {
+            "model": ApiErrorResponse,
+            "description": "Mock fixture missing (MOCK_FIXTURE_MISSING).",
+        },
+    },
+)
 async def triage_api_mock(request: TriageApiRequest):
     try:
         result, fixture_id = load_mock_result()

@@ -32,6 +32,33 @@ class TriageApiRequest(BaseModel):
     include_raw_intel: bool = False
     include_html_report: bool = False
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "ioc": "malware.wicar.org",
+                    "source": "manual",
+                    "include_raw_intel": False,
+                    "include_html_report": False,
+                },
+                {
+                    "ioc": "8.8.8.8",
+                    "case_id": "CASE-1002",
+                    "source": "postman_demo",
+                    "include_raw_intel": True,
+                    "include_html_report": False,
+                },
+                {
+                    "ioc": "express",
+                    "case_id": "CASE-PKG-001",
+                    "source": "supply_chain_scan",
+                    "include_raw_intel": True,
+                    "include_html_report": True,
+                },
+            ]
+        }
+    }
+
 
 
 
