@@ -18,12 +18,27 @@ class ExecutionMode(str, Enum):
     mock = "mock"
 
 
+class ExampleType(str, Enum):
+    domain = "domain"
+    ip = "ip"
+    hash = "hash"
+    cve = "cve"
+
+
 class TriageApiRequest(BaseModel):
     ioc: str = Field(min_length=1)
     case_id: str | None = None
     source: str = "manual"
     include_raw_intel: bool = False
     include_html_report: bool = False
+
+
+
+
+class ExampleApiResponse(BaseModel):
+    type: ExampleType
+    payload: TriageApiRequest
+    notes: str | None = None
 
 
 class IocIdentity(BaseModel):

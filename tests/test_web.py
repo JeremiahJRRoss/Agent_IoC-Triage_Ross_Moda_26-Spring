@@ -99,10 +99,31 @@ def test_triage_api_returns_json(client):
 def test_triage_examples_domain(client):
     resp = client.get("/api/v1/examples/domain")
     assert resp.status_code == 200
-    assert resp.json()["ioc"] == "malware.wicar.org"
+    body = resp.json()
+    assert body["type"] == "domain"
+    assert body["payload"]["ioc"] == "malware.wicar.org"
+    assert body["notes"] is None
 
 
 def test_triage_example_404(client):
     resp = client.get("/api/v1/examples/nope")
     assert resp.status_code == 404
     assert resp.json()["error"]["code"] == "EXAMPLE_NOT_FOUND"
+
+
+def test_triage_example_rejects_invalid_fixture(monkeypatch):
+    monkeypatch.setattr("agent.credentials.resolve_credentials", lambda: None)
+    monkeypatch.setattr("agent.tracing.init_tracing", lambda: None)
+    monkeypatch.setattr("agent.graph.build_graph", lambda: _StubGraph())
+    from web import app as app_module
+
+    monkeypatch.setattr(
+        app_module,
+        "_example_payload",
+        lambda _example_type: (_ for _ in ()).throw(ValueError("bad fixture")),
+    )
+
+    with TestClient(app_module.app) as c:
+        resp = c.get("/api/v1/examples/domain")
+
+    assert resp.status_code == 500

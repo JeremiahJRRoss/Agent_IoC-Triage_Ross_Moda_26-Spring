@@ -27,7 +27,7 @@ from agent import tracing as _tracing
 
 from web.demo_mode import load_demo_result, load_mock_result
 from web.response_mapper import to_api_response
-from web.schemas import ApiErrorResponse, ErrorInfo, ExecutionMode, TriageApiRequest, TriageApiResponse
+from web.schemas import ApiErrorResponse, ErrorInfo, ExampleApiResponse, ExampleType, ExecutionMode, TriageApiRequest, TriageApiResponse
 
 _WEB_DIR = Path(__file__).parent
 templates = Jinja2Templates(directory=str(_WEB_DIR / "templates"))
@@ -44,11 +44,12 @@ def _error_response(status: int, code: str, message: str, case_id: str | None = 
     return JSONResponse(payload, status_code=status)
 
 
-def _example_payload(example_type: str) -> dict:
-    example_path = _WEB_DIR.parent / "fixtures" / "examples" / f"{example_type}.json"
+def _example_payload(example_type: ExampleType) -> TriageApiRequest:
+    example_path = _WEB_DIR.parent / "fixtures" / "examples" / f"{example_type.value}.json"
     if not example_path.exists():
-        raise FileNotFoundError(example_type)
-    return json.loads(example_path.read_text())
+        raise FileNotFoundError(example_type.value)
+    payload = json.loads(example_path.read_text())
+    return TriageApiRequest.model_validate(payload)
 
 
 @asynccontextmanager
@@ -118,13 +119,20 @@ async def triage(ioc: str = Form(...)):
     )
 
 
-@app.get("/api/v1/examples/{example_type}")
+@app.get("/api/v1/examples/{example_type}", response_model=ExampleApiResponse)
 async def triage_example(example_type: str):
     try:
-        payload = _example_payload(example_type)
+        parsed_type = ExampleType(example_type)
+    except ValueError:
+        return _error_response(404, "EXAMPLE_NOT_FOUND", "Example type not found", details={"example_type": example_type})
+
+    try:
+        payload = _example_payload(parsed_type)
     except FileNotFoundError:
         return _error_response(404, "EXAMPLE_NOT_FOUND", "Example type not found", details={"example_type": example_type})
-    return payload
+    except ValueError as exc:
+        return _error_response(500, "EXAMPLE_INVALID", f"Invalid example fixture: {exc}", details={"example_type": example_type})
+    return {"type": parsed_type, "payload": payload, "notes": None}
 
 
 @app.post("/api/v1/triage", response_model=TriageApiResponse)
