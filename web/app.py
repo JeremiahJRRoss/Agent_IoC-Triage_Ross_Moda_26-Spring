@@ -25,7 +25,7 @@ from agent import credentials as _credentials
 from agent import graph as _graph
 from agent import tracing as _tracing
 
-from web.demo_mode import load_demo_result
+from web.demo_mode import load_demo_result, load_mock_result
 from web.response_mapper import to_api_response
 from web.schemas import ApiErrorResponse, ErrorInfo, ExecutionMode, TriageApiRequest, TriageApiResponse
 
@@ -133,6 +133,10 @@ async def triage_api(request: TriageApiRequest):
     if not ioc:
         return _error_response(400, "IOC_EMPTY", "IOC must not be empty", case_id=request.case_id)
 
+    # Execution mode precedence:
+    # 1) FLOWRUN_DEMO_MODE=true => fixtures only (never live integrations)
+    # 2) /api/v1/triage/mock => canned fixture response only
+    # 3) default / live => real integrations
     demo_mode = os.getenv("FLOWRUN_DEMO_MODE", "false").lower() == "true"
     if demo_mode:
         try:
@@ -154,5 +158,8 @@ async def triage_api(request: TriageApiRequest):
 
 @app.post("/api/v1/triage/mock", response_model=TriageApiResponse)
 async def triage_api_mock(request: TriageApiRequest):
-    result, fixture_id = load_demo_result(request.ioc)
+    try:
+        result, fixture_id = load_mock_result()
+    except FileNotFoundError as exc:
+        return _error_response(503, "MOCK_FIXTURE_MISSING", str(exc), case_id=request.case_id)
     return to_api_response(result, request, execution_mode=ExecutionMode.mock, fixture_id=fixture_id)
