@@ -15,9 +15,9 @@ Submit any IOC (IP address, domain, URL, file hash, CVE identifier, or **softwar
 5. Generate a structured threat report with recommended actions
 6. Stream a full execution trace via OpenTelemetry (OTLP/HTTP) to the configured collector for observability
 
-## Quick Start (Container — Default)
+## Quick Start
 
-The default deployment is a container image with a small web UI on **port 7777**. Works identically with Docker or Podman.
+FlowRun runs as a container image with a small web UI on **port 7777**. Works identically with Docker or Podman — no Python or local dependency install required.
 
 ### 1. Prepare credentials
 ```bash
@@ -54,31 +54,18 @@ Paste any IOC (IP, domain, URL, file hash, CVE, package) into the input field an
 # podman compose down
 ```
 
+### Demo mode
+Set `FLOWRUN_DEMO_MODE=true` to serve `POST /api/v1/triage` from local fixtures only — no API keys, no live calls:
+```bash
+FLOWRUN_DEMO_MODE=true docker compose up -d --build
+# or: FLOWRUN_DEMO_MODE=true podman compose up -d --build
+```
+See the [Postman demo runbook](demo/POSTMAN_DEMO_INSTRUCTIONS.md) for the full walkthrough.
+
 ### Tracing
 By default the container ships OpenTelemetry spans to `http://host.docker.internal:4318` — your host machine's local OTLP/HTTP collector port. If no collector is running, tracing fails silently and triage continues normally. To target a different endpoint, set `OTEL_EXPORTER_OTLP_ENDPOINT` in your `.env`.
 
-## Run Without a Container
-
-The CLI and Jupyter notebook continue to work for local development:
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate   # Python 3.11 or newer (tested on 3.14)
-pip install -r requirements.txt
-cp .env.template .env   # fill in your API keys
-python flowrun_agent.py  # CLI mode
-```
-
-For Jupyter, also run:
-```bash
-pip install ipykernel
-python -m ipykernel install --user --name=flowrun --display-name="FlowRun (venv)"
-jupyter notebook flowrun_agent.ipynb
-# Then: Kernel → Change kernel → FlowRun (venv)
-```
-
 See [QUICK_START.md](QUICK_START.md) for the full setup walkthrough.
-
-
 
 ## Postman demo checks (local + CI parity)
 
@@ -87,7 +74,7 @@ A CI workflow runs `postman_collection.json` in **demo mode** and uploads:
 - JUnit XML
 - JSON run report
 
-To reproduce locally, follow [`docs/POSTMAN_DEMO.md`](docs/POSTMAN_DEMO.md#local-reproduction-same-checks-as-ci).
+To reproduce locally, follow [`demo/POSTMAN_DEMO_INSTRUCTIONS.md`](demo/POSTMAN_DEMO_INSTRUCTIONS.md).
 
 Minimum pass criteria:
 - All requests pass (Newman exit code `0`).
@@ -104,8 +91,8 @@ Minimum pass criteria:
 | [FlowRun_Streamlet_IoC_Triage_Architecture_v2.md](docs/FlowRun_Streamlet_IoC_Triage_Architecture_v2.md) | System architecture and component design |
 | [FlowRun_Streamlet_Build_Prompt.md](docs/FlowRun_Streamlet_Build_Prompt.md) | Original engineering build instructions |
 | [API.md](docs/API.md) | HTTP API reference — endpoints, schemas, error codes, execution modes |
-| [POSTMAN_DEMO.md](docs/POSTMAN_DEMO.md) | Newman/Postman runbook, worked scenarios, and maintenance guide |
-| [POSTMAN_PRESENTATION.md](docs/POSTMAN_PRESENTATION.md) | Presenter script for the live Postman demo |
+| [POSTMAN_DEMO_INSTRUCTIONS.md](demo/POSTMAN_DEMO_INSTRUCTIONS.md) | Postman demo runbook — click-and-type setup and steps |
+| [POSTMAN_DEMO_SCRIPT.md](demo/POSTMAN_DEMO_SCRIPT.md) | Presenter script for the live Postman demo |
 
 ## Project Structure
 
