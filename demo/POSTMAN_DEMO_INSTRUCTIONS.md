@@ -7,17 +7,23 @@ Narration lives in slide notes (Presenter View) — this file is mechanics only.
 
 ## Setup
 
-Run before the demo. Leave running.
+Run before the demo. Leave running. Works identically with Docker or
+Podman — substitute `podman` for `docker` in every command below.
 
 ```bash
-# Terminal 1 — start API in demo mode
-FLOWRUN_DEMO_MODE=true FLOWRUN_NO_PROMPT=1 \
-  python -m uvicorn web.app:app --host 127.0.0.1 --port 7777
+# Terminal 1 — build the image (first run only), then start the API in demo mode
+docker build -t flowrun-streamlet-ioc-triage:0.0.33 .
+docker run -d --name flowrun-demo -p 127.0.0.1:7777:7777 \
+  -e FLOWRUN_DEMO_MODE=true -e FLOWRUN_NO_PROMPT=1 \
+  flowrun-streamlet-ioc-triage:0.0.33
 
 # Terminal 2 — verify
 curl -s http://127.0.0.1:7777/health
 # expect: {"status":"ok",...}
 ```
+
+Demo mode serves every response from local fixtures baked into the image —
+no `.env` file and no API keys are needed.
 
 Postman:
 - Import `postman_collection.json`
@@ -89,6 +95,15 @@ Advance. No external clicks.
 
 ---
 
+## Teardown
+
+After the demo, remove the container:
+```bash
+docker rm -f flowrun-demo
+```
+
+---
+
 ## Recovery
 
 ### Postman frozen / unresponsive
@@ -99,8 +114,12 @@ newman run postman_collection.json -e postman_environment.demo.json
 Resume on the green summary line.
 
 ### Server connection refused
-Restart in Terminal 1 (same command as setup). Verify:
+Recreate the container in Terminal 1, then verify:
 ```bash
+docker rm -f flowrun-demo
+docker run -d --name flowrun-demo -p 127.0.0.1:7777:7777 \
+  -e FLOWRUN_DEMO_MODE=true -e FLOWRUN_NO_PROMPT=1 \
+  flowrun-streamlet-ioc-triage:0.0.33
 curl -s http://127.0.0.1:7777/health
 ```
 

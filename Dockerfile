@@ -16,6 +16,7 @@ RUN pip install -r requirements.txt
 
 COPY agent/ ./agent/
 COPY web/ ./web/
+COPY fixtures/ ./fixtures/
 COPY flowrun_agent.py .
 
 USER flowrun

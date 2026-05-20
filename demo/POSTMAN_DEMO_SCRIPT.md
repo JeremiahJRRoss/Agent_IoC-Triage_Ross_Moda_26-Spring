@@ -43,15 +43,26 @@ Total time budget: **4:00**.
 
 ## Pre-flight
 
+Works identically with Docker or Podman — substitute `podman` for
+`docker` in the commands below.
+
 ```bash
-# 1. API in demo mode (terminal 1)
-FLOWRUN_DEMO_MODE=true FLOWRUN_NO_PROMPT=1 \
-  python -m uvicorn web.app:app --host 127.0.0.1 --port 7777
+# 1. Build the image (first run only) and start the API in demo mode (terminal 1)
+docker build -t flowrun-streamlet-ioc-triage:0.0.33 .
+docker run -d --name flowrun-demo -p 127.0.0.1:7777:7777 \
+  -e FLOWRUN_DEMO_MODE=true -e FLOWRUN_NO_PROMPT=1 \
+  flowrun-streamlet-ioc-triage:0.0.33
 
 # 2. Verify (terminal 2)
 curl -s http://127.0.0.1:7777/health
 # Expect: {"status":"ok","trace_endpoint":...}
+
+# 3. Teardown — after the demo
+docker rm -f flowrun-demo
 ```
+
+Demo mode serves every response from local fixtures baked into the image —
+no `.env` file and no API keys are needed.
 
 Postman: import `postman_collection.json`, set environment to
 `FlowRun IoC Triage — Demo`, expand the collection tree.
