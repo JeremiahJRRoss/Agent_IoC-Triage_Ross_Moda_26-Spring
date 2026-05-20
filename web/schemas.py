@@ -19,9 +19,12 @@ class ExecutionMode(str, Enum):
 
 
 class TriageApiRequest(BaseModel):
-    ioc: str = Field(min_length=1)
-    case_id: str | None = None
-    source: str = "manual"
+    ioc: str = Field(
+        min_length=1,
+        examples=["malware.wicar.org", "8.8.8.8", "CVE-2024-3094"],
+    )
+    case_id: str | None = Field(default=None, examples=["CASE-1001"])
+    source: str = Field(default="manual", examples=["postman_demo"])
     include_raw_intel: bool = False
     include_html_report: bool = False
 

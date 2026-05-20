@@ -106,3 +106,62 @@ def test_triage_example_404(client):
     resp = client.get("/api/v1/examples/nope")
     assert resp.status_code == 404
     assert resp.json()["error"]["code"] == "EXAMPLE_NOT_FOUND"
+
+
+def test_triage_api_mock_returns_json(client):
+    resp = client.post("/api/v1/triage/mock", json={"ioc": "8.8.8.8", "case_id": "CASE-MOCK"})
+    assert resp.status_code == 200
+    assert resp.json()["execution_mode"] == "mock"
+
+
+def test_triage_api_include_fields(client):
+    resp = client.post(
+        "/api/v1/triage",
+        json={"ioc": "8.8.8.8", "include_raw_intel": True, "include_html_report": True},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "raw_intel" in body
+    assert "report_html" in body
+
+
+def test_triage_api_empty_ioc_returns_error(client):
+    resp = client.post("/api/v1/triage", json={"ioc": "   "})
+    assert resp.status_code == 422 or resp.status_code == 400
+
+
+def test_triage_api_unknown_ioc_returns_unsupported(monkeypatch):
+    monkeypatch.setattr("agent.credentials.resolve_credentials", lambda: None)
+    monkeypatch.setattr("agent.tracing.init_tracing", lambda: None)
+    monkeypatch.setattr("agent.graph.build_graph", lambda: _StubGraph(response={"ioc_type": "unknown"}))
+    from web.app import app
+
+    with TestClient(app) as c:
+        resp = c.post("/api/v1/triage", json={"ioc": "??"})
+    assert resp.status_code == 400
+    assert resp.json()["error"]["code"] == "IOC_UNSUPPORTED"
+
+
+def test_triage_api_graph_unavailable(monkeypatch):
+    monkeypatch.setattr("agent.credentials.resolve_credentials", lambda: None)
+    monkeypatch.setattr("agent.tracing.init_tracing", lambda: None)
+    monkeypatch.setattr("agent.graph.build_graph", lambda: None)
+    from web.app import app
+
+    with TestClient(app) as c:
+        resp = c.post("/api/v1/triage", json={"ioc": "8.8.8.8"})
+    assert resp.status_code == 503
+    assert resp.json()["error"]["code"] == "AGENT_UNAVAILABLE"
+
+
+def test_triage_api_demo_mode_fixture(monkeypatch):
+    monkeypatch.setattr("agent.credentials.resolve_credentials", lambda: None)
+    monkeypatch.setattr("agent.tracing.init_tracing", lambda: None)
+    monkeypatch.setattr("agent.graph.build_graph", lambda: _StubGraph())
+    monkeypatch.setenv("FLOWRUN_DEMO_MODE", "true")
+    from web.app import app
+
+    with TestClient(app) as c:
+        resp = c.post("/api/v1/triage", json={"ioc": "unseen.example"})
+    assert resp.status_code == 200
+    assert resp.json()["execution_mode"] == "demo"

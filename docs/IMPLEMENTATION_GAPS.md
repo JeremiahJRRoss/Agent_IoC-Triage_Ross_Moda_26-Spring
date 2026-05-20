@@ -4,22 +4,22 @@ This checklist captures what still remains to fully complete the Postman-first i
 
 ## 1) Contract hardening (high priority)
 
-- [ ] Add complete status-code mapping for API routes (`400/422/429/502/503/500`) and ensure every error path returns the same schema.
-- [ ] Add explicit unsupported-IOC error handling (`IOC_UNSUPPORTED`) from graph output (`ioc_type=unknown`).
-- [ ] Add Pydantic/OpenAPI examples for success and error responses.
+- [x] Add complete status-code mapping for API routes (`400/422/429/502/503/500`) and ensure every error path returns the same schema.
+- [x] Add explicit unsupported-IOC error handling (`IOC_UNSUPPORTED`) from graph output (`ioc_type=unknown`).
+- [x] Add Pydantic/OpenAPI examples for success and error responses.
 
 ## 2) Deterministic mode semantics
 
 - [ ] Expand fixtures beyond fallback `default.json` to include realistic domain/ip/hash/cve severity scenarios.
 - [ ] Document exact fixture lookup precedence and fallback behavior in README + demo docs.
-- [ ] Add tests for `FLOWRUN_DEMO_MODE=true`, including fixture hit and missing fixture behavior.
+- [x] Add tests for `FLOWRUN_DEMO_MODE=true`, including fixture hit behavior (missing-fixture path pending).
 
 ## 3) API validation and tests
 
-- [ ] Add tests for `/api/v1/triage/mock`.
-- [ ] Add tests for `include_raw_intel=true` and `include_html_report=true`.
-- [ ] Add negative tests for empty IOC, unknown IOC, and graph unavailable on JSON API endpoints.
-- [ ] Add mapper-focused unit tests for severity normalization and score clamping.
+- [x] Add tests for `/api/v1/triage/mock`.
+- [x] Add tests for `include_raw_intel=true` and `include_html_report=true`.
+- [x] Add negative tests for empty IOC, unknown IOC, and graph unavailable on JSON API endpoints.
+- [x] Add mapper-focused unit tests for severity normalization and score clamping.
 
 ## 4) Postman deliverables (currently missing)
 
