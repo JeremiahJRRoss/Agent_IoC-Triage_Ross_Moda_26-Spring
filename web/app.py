@@ -13,8 +13,10 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Form
-from fastapi.responses import HTMLResponse, PlainTextResponse
+import json
+import os
+from fastapi import FastAPI, Form, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
@@ -23,11 +25,30 @@ from agent import credentials as _credentials
 from agent import graph as _graph
 from agent import tracing as _tracing
 
+from web.demo_mode import load_demo_result
+from web.response_mapper import to_api_response
+from web.schemas import ApiErrorResponse, ErrorInfo, ExecutionMode, TriageApiRequest, TriageApiResponse
 
 _WEB_DIR = Path(__file__).parent
 templates = Jinja2Templates(directory=str(_WEB_DIR / "templates"))
 
 _runtime: dict = {}
+
+
+def _error_response(status: int, code: str, message: str, case_id: str | None = None, details: dict | None = None):
+    payload = ApiErrorResponse(
+        error=ErrorInfo(code=code, message=message, details=details),
+        case_id=case_id,
+        trace={"trace_endpoint": _runtime.get("trace_endpoint")},
+    ).model_dump()
+    return JSONResponse(payload, status_code=status)
+
+
+def _example_payload(example_type: str) -> dict:
+    example_path = _WEB_DIR.parent / "fixtures" / "examples" / f"{example_type}.json"
+    if not example_path.exists():
+        raise FileNotFoundError(example_type)
+    return json.loads(example_path.read_text())
 
 
 @asynccontextmanager
@@ -95,3 +116,43 @@ async def triage(ioc: str = Form(...)):
         "report_html",
         '<p style="color:#dc2626;">No report generated.</p>',
     )
+
+
+@app.get("/api/v1/examples/{example_type}")
+async def triage_example(example_type: str):
+    try:
+        payload = _example_payload(example_type)
+    except FileNotFoundError:
+        return _error_response(404, "EXAMPLE_NOT_FOUND", "Example type not found", details={"example_type": example_type})
+    return payload
+
+
+@app.post("/api/v1/triage", response_model=TriageApiResponse)
+async def triage_api(request: TriageApiRequest):
+    ioc = request.ioc.strip()
+    if not ioc:
+        return _error_response(400, "IOC_EMPTY", "IOC must not be empty", case_id=request.case_id)
+
+    demo_mode = os.getenv("FLOWRUN_DEMO_MODE", "false").lower() == "true"
+    if demo_mode:
+        try:
+            result, fixture_id = load_demo_result(ioc)
+        except FileNotFoundError as exc:
+            return _error_response(503, "DEMO_FIXTURE_MISSING", str(exc), case_id=request.case_id)
+        return to_api_response(result, request, execution_mode=ExecutionMode.demo, fixture_id=fixture_id)
+
+    graph = _runtime.get("graph")
+    if graph is None:
+        return _error_response(503, "AGENT_UNAVAILABLE", "Agent not initialised.", case_id=request.case_id)
+
+    try:
+        result = await graph.ainvoke({"ioc_raw": ioc})
+        return to_api_response(result, request, execution_mode=ExecutionMode.live)
+    except Exception as exc:  # noqa: BLE001
+        return _error_response(500, "TRIAGE_FAILED", f"{type(exc).__name__}: {exc}", case_id=request.case_id)
+
+
+@app.post("/api/v1/triage/mock", response_model=TriageApiResponse)
+async def triage_api_mock(request: TriageApiRequest):
+    result, fixture_id = load_demo_result(request.ioc)
+    return to_api_response(result, request, execution_mode=ExecutionMode.mock, fixture_id=fixture_id)
