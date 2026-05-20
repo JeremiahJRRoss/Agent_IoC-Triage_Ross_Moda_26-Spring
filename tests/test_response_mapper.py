@@ -35,6 +35,8 @@ def test_to_api_response_exposes_only_dto_shape():
         "composite_score": "0.5",
         "active_weights": {"private": 1.0},
         "ioc_raw": "8.8.8.8",
+        "total_ms": 123,
+        "warnings": ["virustotal timed out"],
     }
 
     response = to_api_response(result, request)
@@ -43,3 +45,5 @@ def test_to_api_response_exposes_only_dto_shape():
     assert "active_weights" not in dumped
     assert dumped["verdict"]["severity"] == "MEDIUM"
     assert dumped["verdict"]["score"] == 0.5
+    assert dumped["timings"]["total_ms"] == 123
+    assert dumped["warnings"] == ["virustotal timed out"]
