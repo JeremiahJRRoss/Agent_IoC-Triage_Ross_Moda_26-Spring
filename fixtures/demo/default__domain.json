@@ -1,0 +1,17 @@
+{
+  "ioc_raw": "malware.wicar.org",
+  "ioc_clean": "malware.wicar.org",
+  "ioc_type": "domain",
+  "raw_intel": {
+    "virustotal": {"malicious": 8, "suspicious": 2, "harmless": 70},
+    "otx": {"pulse_count": 3}
+  },
+  "intel_errors": [],
+  "score_breakdown": {"virustotal": 0.42, "otx": 0.13},
+  "composite_score": 0.55,
+  "severity_band": "MEDIUM",
+  "verdict_justification": "Deterministic demo fixture: domain flagged by multiple intel sources.",
+  "escalation_required": false,
+  "report_html": "<p>Demo report for malware.wicar.org</p>",
+  "trace_endpoint": "http://localhost:4318"
+}

@@ -1,3 +1,20 @@
+"""Demo and mock execution-mode fixture loading.
+
+Demo mode (``FLOWRUN_DEMO_MODE=true``) resolves ``POST /api/v1/triage``
+entirely from deterministic fixtures under ``fixtures/demo/``, never calling
+live integrations. Fixture lookup is strict: a missing fixture raises
+``FileNotFoundError``, which ``web/app.py`` surfaces as
+``503 DEMO_FIXTURE_MISSING`` — it never falls through to live mode.
+
+The ``cve`` IOC type is intentionally left unfixtured: no ``default__cve.json``
+or ``cve__*.json`` file exists under ``fixtures/demo/``. This is deliberate.
+The Postman demo collection posts a CVE IOC in demo mode to prove that mode
+precedence is strict — demo mode hard-fails with ``503 DEMO_FIXTURE_MISSING``
+rather than silently degrading to a live call. Do not add a CVE demo fixture
+without also updating the negative-path assertions in
+``postman_collection.json``.
+"""
+
 from __future__ import annotations
 
 import json

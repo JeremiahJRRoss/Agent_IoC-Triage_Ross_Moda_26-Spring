@@ -32,7 +32,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Install Newman
-        run: npm install -g newman newman-reporter-junitfull
+        run: npm install -g newman newman-reporter-junitfull newman-reporter-htmlextra
 
       - name: Start API in demo mode
         run: |
@@ -51,33 +51,28 @@ jobs:
 
       - name: Assert health latency threshold
         run: |
-          latency_ms=$(curl -o /dev/null -s -w '%{time_total}' "$BASE_URL/health")
-          latency_ms=$(python - <<'PY' "$latency_ms"
-import sys
-print(round(float(sys.argv[1]) * 1000, 2))
-PY
-)
+          latency_s=$(curl -o /dev/null -s -w '%{time_total}' "$BASE_URL/health")
+          latency_ms=$(awk "BEGIN { printf \"%.2f\", ${latency_s} * 1000 }")
           echo "Health latency: ${latency_ms}ms"
-          python - <<'PY' "$latency_ms" "$HEALTH_LATENCY_THRESHOLD_MS"
-import sys
-latency = float(sys.argv[1])
-threshold = float(sys.argv[2])
-if latency > threshold:
-    raise SystemExit(f"Health latency {latency}ms exceeds threshold {threshold}ms")
-print(f"Health latency check passed: {latency}ms <= {threshold}ms")
-PY
+          if awk "BEGIN { exit !(${latency_ms} > ${HEALTH_LATENCY_THRESHOLD_MS}) }"; then
+            echo "Health latency ${latency_ms}ms exceeds threshold ${HEALTH_LATENCY_THRESHOLD_MS}ms"
+            exit 1
+          fi
+          echo "Health latency check passed: ${latency_ms}ms <= ${HEALTH_LATENCY_THRESHOLD_MS}ms"
 
       - name: Run Postman collection with Newman
         run: |
           mkdir -p artifacts/postman
           set -o pipefail
-          newman run postman_collection.json \
-            --env-var "baseUrl=$BASE_URL" \
-            --env-var "iocType=domain" \
-            --reporters cli,json,junitfull \
-            --reporter-json-export artifacts/postman/newman-report.json \
-            --reporter-junitfull-export artifacts/postman/newman-junit.xml \
-            | tee artifacts/postman/newman-cli-summary.txt
+          ./scripts/postman.sh full | tee artifacts/postman/newman-cli-summary.txt
+
+      - name: Gate on assertion count
+        run: |
+          total=$(jq '.run.stats.assertions.total' artifacts/postman/newman-report.json)
+          failed=$(jq '.run.stats.assertions.failed' artifacts/postman/newman-report.json)
+          echo "Assertions: $total total, $failed failed"
+          test "$total" -ge 25 || { echo "Too few assertions: $total < 25"; exit 1; }
+          test "$failed" -eq 0
 
       - name: Upload Postman artifacts
         if: always()
@@ -88,4 +83,5 @@ PY
             artifacts/postman/newman-cli-summary.txt
             artifacts/postman/newman-junit.xml
             artifacts/postman/newman-report.json
+            artifacts/postman/newman-report.html
             server.log

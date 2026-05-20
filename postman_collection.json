@@ -1,78 +1,761 @@
 {
   "info": {
     "name": "FlowRun IoC Triage API",
+    "description": "FlowRun IoC Triage API \u2014 demo-mode contract and behavior checks.\n\nRun against a server started with FLOWRUN_DEMO_MODE=true. Use the bundled environment files (postman_environment.demo.json / .local.json) or pass baseUrl/iocType/expectedExecutionMode as --env-var overrides.\n\nSee docs/POSTMAN_DEMO.md for the runbook.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Get Example by Type",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/examples/{{iocType}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "examples",
-            "{{iocType}}"
+      "name": "00 \u2014 Liveness",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Container liveness probe. No agent work, no external calls."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"body.status is ok\", () => pm.expect(body.status).to.eql(\"ok\"));",
+                  "pm.test(\"trace_endpoint key present\", () => pm.expect(body).to.have.property(\"trace_endpoint\"));",
+                  "const threshold = Number(pm.variables.get(\"healthLatencyThresholdMs\")) || 1000;",
+                  "pm.test(\"responseTime < healthLatencyThresholdMs\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(threshold);",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 200ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(200);",
+                  "});"
+                ]
+              }
+            }
           ]
-        },
-        "description": "Single source of truth for sample triage payloads lives in fixtures/examples/*.json via server endpoint."
-      }
+        }
+      ]
     },
     {
-      "name": "Triage (using fixture example)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{{examplePayload}}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/triage",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "triage"
+      "name": "01 \u2014 Examples",
+      "item": [
+        {
+          "name": "GET /api/v1/examples/{{iocType}}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/examples/{{iocType}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "examples",
+                "{{iocType}}"
+              ]
+            },
+            "description": "Variable-driven example fetch \u2014 single source of truth for sample payloads."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"type matches requested iocType\", () => {",
+                  "  pm.expect(body.type).to.eql(pm.variables.get(\"iocType\"));",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
           ]
         },
-        "description": "Use pre-request script below to load canonical fixture payload from /api/v1/examples/{type}."
-      },
-      "event": [
         {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "const baseUrl = pm.variables.get('baseUrl');",
-              "const iocType = pm.variables.get('iocType') || 'domain';",
-              "pm.sendRequest(`${baseUrl}/api/v1/examples/${iocType}`, (err, res) => {",
-              "  if (err) { throw err; }",
-              "  const body = res.json();",
-              "  pm.variables.set('examplePayload', JSON.stringify(body.payload));",
-              "});"
-            ]
-          }
+          "name": "GET /api/v1/examples/domain",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/examples/domain",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "examples",
+                "domain"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"type is domain\", () => pm.expect(body.type).to.eql(\"domain\"));",
+                  "",
+                  "pm.test(\"payload.ioc is a non-empty string\", () => {",
+                  "  pm.expect(body.payload.ioc).to.be.a(\"string\");",
+                  "  pm.expect(body.payload.ioc.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/v1/examples/ip",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/examples/ip",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "examples",
+                "ip"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"type is ip\", () => pm.expect(body.type).to.eql(\"ip\"));",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/v1/examples/hash",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/examples/hash",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "examples",
+                "hash"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"type is hash\", () => pm.expect(body.type).to.eql(\"hash\"));",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/v1/examples/cve",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/examples/cve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "examples",
+                "cve"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"type is cve\", () => pm.expect(body.type).to.eql(\"cve\"));",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/v1/examples/nope",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/examples/nope",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "examples",
+                "nope"
+              ]
+            },
+            "description": "Negative path \u2014 unknown IOC type must return 404 EXAMPLE_NOT_FOUND."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"error.code is EXAMPLE_NOT_FOUND\", () => {",
+                  "  pm.expect(body.error.code).to.eql(\"EXAMPLE_NOT_FOUND\");",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 \u2014 Triage (demo mode)",
+      "item": [
+        {
+          "name": "POST /api/v1/triage (domain via example chain)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{examplePayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/triage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "triage"
+              ]
+            },
+            "description": "Loads the canonical domain payload from /api/v1/examples and triages it in demo mode."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baseUrl = pm.variables.get(\"baseUrl\");",
+                  "const iocType = pm.variables.get(\"iocType\") || \"domain\";",
+                  "pm.sendRequest(`${baseUrl}/api/v1/examples/${iocType}`, (err, res) => {",
+                  "  if (err) { throw err; }",
+                  "  pm.variables.set(\"examplePayload\", JSON.stringify(res.json().payload));",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const sent = JSON.parse(pm.variables.get(\"examplePayload\"));",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"execution_mode matches expectedExecutionMode\", () => {",
+                  "  pm.expect(body.execution_mode).to.eql(pm.variables.get(\"expectedExecutionMode\"));",
+                  "});",
+                  "pm.test(\"fixture_id is non-empty in demo mode\", () => {",
+                  "  pm.expect(body.fixture_id).to.be.a(\"string\");",
+                  "  pm.expect(body.fixture_id.length).to.be.above(0);",
+                  "});",
+                  "pm.test(\"response has all TriageApiResponse keys\", () => {",
+                  "  const expectedKeys = JSON.parse(pm.collectionVariables.get(\"triageResponseKeys\"));",
+                  "  pm.expect(Object.keys(body)).to.include.members(expectedKeys);",
+                  "});",
+                  "pm.test(\"verdict.severity is a known band\", () => {",
+                  "  const bands = JSON.parse(pm.collectionVariables.get(\"severityBands\"));",
+                  "  pm.expect(bands).to.include(body.verdict.severity);",
+                  "});",
+                  "pm.test(\"verdict.score within [0,1]\", () => {",
+                  "  pm.expect(body.verdict.score).to.be.within(0, 1);",
+                  "});",
+                  "pm.test(\"timings.total_ms >= 0\", () => {",
+                  "  pm.expect(body.timings.total_ms).to.be.at.least(0);",
+                  "});",
+                  "pm.test(\"case_id echoes the request\", () => {",
+                  "  pm.expect(body.case_id).to.eql(sent.case_id);",
+                  "});",
+                  "",
+                  "pm.test(\"matches TriageApiResponse schema\", () => {",
+                  "  const schemas = JSON.parse(pm.collectionVariables.get(\"openApiSchemas\") || \"null\");",
+                  "  pm.expect(schemas, \"OpenAPI schemas loaded\").to.be.an(\"object\");",
+                  "  const Ajv = require(\"ajv\");",
+                  "  const ajv = new Ajv({ allErrors: true, strict: false });",
+                  "  const root = { $ref: \"#/components/schemas/TriageApiResponse\",",
+                  "                 components: { schemas: schemas } };",
+                  "  const validate = ajv.compile(root);",
+                  "  const ok = validate(body);",
+                  "  if (!ok) { console.log(\"schema errors:\", JSON.stringify(validate.errors)); }",
+                  "  pm.expect(ok, \"response validates against TriageApiResponse\").to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/v1/triage (ip via example chain)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{examplePayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/triage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "triage"
+              ]
+            },
+            "description": "Loads the canonical ip payload from /api/v1/examples and triages it in demo mode."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baseUrl = pm.variables.get(\"baseUrl\");",
+                  "pm.sendRequest(`${baseUrl}/api/v1/examples/ip`, (err, res) => {",
+                  "  if (err) { throw err; }",
+                  "  pm.variables.set(\"examplePayload\", JSON.stringify(res.json().payload));",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"execution_mode is demo\", () => pm.expect(body.execution_mode).to.eql(\"demo\"));",
+                  "pm.test(\"fixture_id is non-empty\", () => {",
+                  "  pm.expect(body.fixture_id).to.be.a(\"string\");",
+                  "  pm.expect(body.fixture_id.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"matches TriageApiResponse schema\", () => {",
+                  "  const schemas = JSON.parse(pm.collectionVariables.get(\"openApiSchemas\") || \"null\");",
+                  "  pm.expect(schemas, \"OpenAPI schemas loaded\").to.be.an(\"object\");",
+                  "  const Ajv = require(\"ajv\");",
+                  "  const ajv = new Ajv({ allErrors: true, strict: false });",
+                  "  const root = { $ref: \"#/components/schemas/TriageApiResponse\",",
+                  "                 components: { schemas: schemas } };",
+                  "  const validate = ajv.compile(root);",
+                  "  const ok = validate(body);",
+                  "  if (!ok) { console.log(\"schema errors:\", JSON.stringify(validate.errors)); }",
+                  "  pm.expect(ok, \"response validates against TriageApiResponse\").to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/v1/triage (CVE \u2014 fixture miss)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"ioc\":\"CVE-2021-44228\",\"case_id\":\"CASE-CVE-MISS\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/triage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "triage"
+              ]
+            },
+            "description": "Negative path \u2014 a classified IOC with no demo fixture must hard-fail 503, proving strict mode precedence."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 503\", () => pm.response.to.have.status(503));",
+                  "pm.test(\"error.code is DEMO_FIXTURE_MISSING\", () => {",
+                  "  pm.expect(body.error.code).to.eql(\"DEMO_FIXTURE_MISSING\");",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 \u2014 Triage (mock mode)",
+      "item": [
+        {
+          "name": "POST /api/v1/triage/mock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"ioc\":\"schema-check.example\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/triage/mock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "triage",
+                "mock"
+              ]
+            },
+            "description": "Mock mode \u2014 always returns fixtures/demo/mock.json for schema-only contract checks."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"execution_mode is mock\", () => pm.expect(body.execution_mode).to.eql(\"mock\"));",
+                  "pm.test(\"fixture_id is mock\", () => pm.expect(body.fixture_id).to.eql(\"mock\"));",
+                  "",
+                  "pm.test(\"matches TriageApiResponse schema\", () => {",
+                  "  const schemas = JSON.parse(pm.collectionVariables.get(\"openApiSchemas\") || \"null\");",
+                  "  pm.expect(schemas, \"OpenAPI schemas loaded\").to.be.an(\"object\");",
+                  "  const Ajv = require(\"ajv\");",
+                  "  const ajv = new Ajv({ allErrors: true, strict: false });",
+                  "  const root = { $ref: \"#/components/schemas/TriageApiResponse\",",
+                  "                 components: { schemas: schemas } };",
+                  "  const validate = ajv.compile(root);",
+                  "  const ok = validate(body);",
+                  "  if (!ok) { console.log(\"schema errors:\", JSON.stringify(validate.errors)); }",
+                  "  pm.expect(ok, \"response validates against TriageApiResponse\").to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 \u2014 Negative & contract",
+      "item": [
+        {
+          "name": "POST /api/v1/triage (empty IOC)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"ioc\":\"   \"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/triage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "triage"
+              ]
+            },
+            "description": "Whitespace-only IOC must return 400 IOC_EMPTY."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"error.code is IOC_EMPTY\", () => pm.expect(body.error.code).to.eql(\"IOC_EMPTY\"));",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/v1/triage (case_id round-trip)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"ioc\":\"8.8.8.8\",\"case_id\":\"{{caseId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/triage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "triage"
+              ]
+            },
+            "description": "case_id supplied in the request must be echoed back verbatim in the response."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"case_id round-trips unchanged\", () => {",
+                  "  pm.expect(body.case_id).to.eql(pm.variables.get(\"caseId\"));",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
   ],
   "variable": [
-    {"key": "baseUrl", "value": "http://localhost:7777"},
-    {"key": "iocType", "value": "domain"},
-    {"key": "examplePayload", "value": "{}"}
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:7777"
+    },
+    {
+      "key": "iocType",
+      "value": "domain"
+    },
+    {
+      "key": "expectedExecutionMode",
+      "value": "demo"
+    },
+    {
+      "key": "healthLatencyThresholdMs",
+      "value": "1000"
+    },
+    {
+      "key": "caseId",
+      "value": "CASE-ROUNDTRIP-7777"
+    },
+    {
+      "key": "examplePayload",
+      "value": "{}"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.collectionVariables.set(\"triageResponseKeys\", JSON.stringify([",
+          "  \"case_id\",\"ioc\",\"verdict\",\"recommended_actions\",\"source_summary\",",
+          "  \"score_breakdown\",\"raw_intel\",\"report_html\",\"trace\",\"timings\",",
+          "  \"warnings\",\"execution_mode\",\"fixture_id\"",
+          "]));",
+          "pm.collectionVariables.set(\"severityBands\", JSON.stringify([",
+          "  \"CLEAN\",\"LOW\",\"MEDIUM\",\"HIGH\",\"CRITICAL\"",
+          "]));",
+          "if (!pm.collectionVariables.get(\"openApiSchemas\")) {",
+          "  pm.sendRequest(`${pm.variables.get(\"baseUrl\")}/openapi.json`, (err, res) => {",
+          "    if (err) { return; }",
+          "    const spec = res.json();",
+          "    pm.collectionVariables.set(\"openApiSchemas\",",
+          "      JSON.stringify(spec.components.schemas));",
+          "  });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log(`\\u2713 Iteration ${pm.info.iteration + 1}/${pm.info.iterationCount} complete`);"
+        ]
+      }
+    }
   ]
 }
