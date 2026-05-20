@@ -1,0 +1,91 @@
+name: Postman Demo Checks
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  postman-demo:
+    runs-on: ubuntu-latest
+    env:
+      FLOWRUN_DEMO_MODE: "true"
+      FLOWRUN_NO_PROMPT: "1"
+      HEALTH_LATENCY_THRESHOLD_MS: "1000"
+      BASE_URL: "http://127.0.0.1:7777"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Install Newman
+        run: npm install -g newman newman-reporter-junitfull
+
+      - name: Start API in demo mode
+        run: |
+          nohup python -m uvicorn web.app:app --host 127.0.0.1 --port 7777 > server.log 2>&1 &
+
+      - name: Wait for health endpoint
+        run: |
+          for i in {1..30}; do
+            if curl -fsS "$BASE_URL/health" > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become healthy in time"
+          exit 1
+
+      - name: Assert health latency threshold
+        run: |
+          latency_ms=$(curl -o /dev/null -s -w '%{time_total}' "$BASE_URL/health")
+          latency_ms=$(python - <<'PY' "$latency_ms"
+import sys
+print(round(float(sys.argv[1]) * 1000, 2))
+PY
+)
+          echo "Health latency: ${latency_ms}ms"
+          python - <<'PY' "$latency_ms" "$HEALTH_LATENCY_THRESHOLD_MS"
+import sys
+latency = float(sys.argv[1])
+threshold = float(sys.argv[2])
+if latency > threshold:
+    raise SystemExit(f"Health latency {latency}ms exceeds threshold {threshold}ms")
+print(f"Health latency check passed: {latency}ms <= {threshold}ms")
+PY
+
+      - name: Run Postman collection with Newman
+        run: |
+          mkdir -p artifacts/postman
+          set -o pipefail
+          newman run postman_collection.json \
+            --env-var "baseUrl=$BASE_URL" \
+            --env-var "iocType=domain" \
+            --reporters cli,json,junitfull \
+            --reporter-json-export artifacts/postman/newman-report.json \
+            --reporter-junitfull-export artifacts/postman/newman-junit.xml \
+            | tee artifacts/postman/newman-cli-summary.txt
+
+      - name: Upload Postman artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-demo-artifacts
+          path: |
+            artifacts/postman/newman-cli-summary.txt
+            artifacts/postman/newman-junit.xml
+            artifacts/postman/newman-report.json
+            server.log

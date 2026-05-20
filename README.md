@@ -70,6 +70,22 @@ jupyter notebook flowrun_agent.ipynb
 
 See [QUICK_START.md](QUICK_START.md) for the full setup walkthrough.
 
+
+
+## Postman demo checks (local + CI parity)
+
+A CI workflow runs `postman_collection.json` in **demo mode** and uploads:
+- Newman CLI summary
+- JUnit XML
+- JSON run report
+
+To reproduce locally, follow [`docs/POSTMAN_DEMO.md`](docs/POSTMAN_DEMO.md#local-reproduction-same-checks-as-ci).
+
+Minimum pass criteria:
+- All requests pass (Newman exit code `0`).
+- No failed assertions.
+- Health endpoint latency is below threshold when the latency check is enabled.
+
 ## Documentation
 
 | Document | Description |
