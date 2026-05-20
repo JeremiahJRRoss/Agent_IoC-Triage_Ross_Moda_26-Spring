@@ -26,24 +26,32 @@ cp .env.template .env   # then fill in the 5 required API keys
 
 ### 2. Start the stack
 
-**Docker:**
+**Wrapper (auto-detects Docker first, then Podman):**
+```bash
+./scripts/compose.sh up -d --build
+```
+
+**Native Docker compose:**
 ```bash
 docker compose up -d --build
 ```
 
-**Podman:**
+**Native Podman compose:**
 ```bash
 podman compose up -d --build
 ```
 
-Either command builds the image on first run and starts the agent. Open <http://localhost:7777>.
+All three commands do the same thing: build on first run and start the stack. Open <http://localhost:7777>.
 
 ### 3. Use the UI
 Paste any IOC (IP, domain, URL, file hash, CVE, package) into the input field and click **Triage**. The full threat report renders inline below the form.
 
 ### 4. Stop the stack
 ```bash
-docker compose down       # or: podman compose down
+./scripts/compose.sh down
+# or native:
+docker compose down
+podman compose down
 ```
 
 ### Tracing
