@@ -12,10 +12,7 @@ Podman — substitute `podman` for `docker` in every command below.
 
 ```bash
 # Terminal 1 — build the image (first run only), then start the API in demo mode
-docker build -t flowrun-streamlet-ioc-triage:0.0.33 .
-docker run -d --name flowrun-demo -p 127.0.0.1:7777:7777 \
-  -e FLOWRUN_DEMO_MODE=true -e FLOWRUN_NO_PROMPT=1 \
-  flowrun-streamlet-ioc-triage:0.0.33
+docker compose up --build -d
 
 # Terminal 2 — verify
 curl -s http://127.0.0.1:7777/health
