@@ -85,3 +85,24 @@ def test_static_css_served(client):
     resp = client.get("/static/style.css")
     assert resp.status_code == 200
     assert "text/css" in resp.headers["content-type"]
+
+
+def test_triage_api_returns_json(client):
+    resp = client.post("/api/v1/triage", json={"ioc": "8.8.8.8", "case_id": "CASE-1"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["case_id"] == "CASE-1"
+    assert body["ioc"]["type"] == "ip"
+    assert "verdict" in body
+
+
+def test_triage_examples_domain(client):
+    resp = client.get("/api/v1/examples/domain")
+    assert resp.status_code == 200
+    assert resp.json()["ioc"] == "malware.wicar.org"
+
+
+def test_triage_example_404(client):
+    resp = client.get("/api/v1/examples/nope")
+    assert resp.status_code == 404
+    assert resp.json()["error"]["code"] == "EXAMPLE_NOT_FOUND"
