@@ -205,3 +205,61 @@ A full Newman run writes three artifacts under `artifacts/postman/`:
 - **`newman-cli-summary.txt`** — the plain-text CLI summary (the boxed table
   Newman prints). This is where a human looks **first** — it shows the per-folder
   pass/fail ticks and the final totals at a glance.
+
+
+## Maintenance
+
+How the optimized collection is wired, for future maintainers.
+
+### Schema validation
+
+Triage success responses are validated against the live OpenAPI schema, not a
+hand-written copy. The collection-level pre-request script in
+`postman_collection.json` (`event` → `prerequest`) calls
+`pm.sendRequest(${baseUrl}/openapi.json)` once per run and stores
+`components.schemas` in the `openApiSchemas` collection variable. Each triage
+success request's test then compiles `components.schemas.TriageApiResponse`
+with `ajv` (bundled in the Newman sandbox) and validates the response body. A
+field-type change in `web/schemas.py` flows into `/openapi.json` automatically,
+so the assertion tracks the code with no manual edit.
+
+### Response-time budgets
+
+Each request carries an inline `responseTime` budget assertion in its test
+script (`pm.expect(pm.response.responseTime).to.be.below(N)`). Budgets by
+folder: `00 — Liveness` 200ms, `01 — Examples` 300ms, `02 — Triage (demo)`
+500ms, `03 — Triage (mock)` 300ms, `04 — Negative & contract` 500ms. To
+retune one, edit the `below(...)` value in the relevant request's
+`event` → `test` → `script.exec` block in `postman_collection.json`.
+
+### Smoke vs full
+
+`scripts/postman.sh` wraps Newman:
+
+- `./scripts/postman.sh smoke` — runs only `00 — Liveness` and `01 — Examples`
+  with `--bail`. Fast (~1s); suitable for a pre-commit hook.
+- `./scripts/postman.sh full` — runs every folder, emits the `cli`, `json`,
+  `junitfull`, and `htmlextra` reporters into `artifacts/postman/`, and prints
+  an assertion-count summary line. This is what CI runs.
+
+### HTML reporter
+
+`./scripts/postman.sh full` writes `artifacts/postman/newman-report.html`
+(via `newman-reporter-htmlextra`). Open it in a browser for a per-request,
+per-assertion drill-down with request/response bodies — the artifact reviewers
+open when a CI run needs investigating.
+
+### Adding a new endpoint test
+
+1. Add the route to `web/app.py` with full metadata (`tags`, `summary`,
+   `description`, `responses`); document it in `docs/API.md`.
+2. If the endpoint needs demo data, add a fixture under `fixtures/demo/` or
+   `fixtures/examples/` (see `web/demo_mode.py` for the lookup rules).
+3. Add a request item to the matching folder's `item` array in
+   `postman_collection.json`, with a `url` and (for POST) a JSON `body`.
+4. Add an `event` with `listen: "test"`; assert at minimum the status code,
+   and add a folder-appropriate `responseTime` budget. For triage-shaped
+   responses, also add the `ajv` schema check and the `triageResponseKeys`
+   membership check used in `02 — Triage (demo mode)`.
+5. Run `./scripts/postman.sh full` and confirm the CI assertion-count gate in
+   `.github/workflows/postman.yml` still passes (`total >= 25`, `failed == 0`).

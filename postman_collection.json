@@ -37,6 +37,10 @@
                   "const threshold = Number(pm.variables.get(\"healthLatencyThresholdMs\")) || 1000;",
                   "pm.test(\"responseTime < healthLatencyThresholdMs\", () => {",
                   "  pm.expect(pm.response.responseTime).to.be.below(threshold);",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 200ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(200);",
                   "});"
                 ]
               }
@@ -77,6 +81,10 @@
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
                   "pm.test(\"type matches requested iocType\", () => {",
                   "  pm.expect(body.type).to.eql(pm.variables.get(\"iocType\"));",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
                   "});"
                 ]
               }
@@ -114,6 +122,10 @@
                   "pm.test(\"payload.ioc is a non-empty string\", () => {",
                   "  pm.expect(body.payload.ioc).to.be.a(\"string\");",
                   "  pm.expect(body.payload.ioc.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
                   "});"
                 ]
               }
@@ -146,7 +158,11 @@
                 "exec": [
                   "const body = pm.response.json();",
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"type is ip\", () => pm.expect(body.type).to.eql(\"ip\"));"
+                  "pm.test(\"type is ip\", () => pm.expect(body.type).to.eql(\"ip\"));",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
                 ]
               }
             }
@@ -178,7 +194,11 @@
                 "exec": [
                   "const body = pm.response.json();",
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"type is hash\", () => pm.expect(body.type).to.eql(\"hash\"));"
+                  "pm.test(\"type is hash\", () => pm.expect(body.type).to.eql(\"hash\"));",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
                 ]
               }
             }
@@ -210,7 +230,11 @@
                 "exec": [
                   "const body = pm.response.json();",
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"type is cve\", () => pm.expect(body.type).to.eql(\"cve\"));"
+                  "pm.test(\"type is cve\", () => pm.expect(body.type).to.eql(\"cve\"));",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
                 ]
               }
             }
@@ -245,6 +269,10 @@
                   "pm.test(\"status is 404\", () => pm.response.to.have.status(404));",
                   "pm.test(\"error.code is EXAMPLE_NOT_FOUND\", () => {",
                   "  pm.expect(body.error.code).to.eql(\"EXAMPLE_NOT_FOUND\");",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
                   "});"
                 ]
               }
@@ -319,11 +347,11 @@
                   "  pm.expect(body.fixture_id.length).to.be.above(0);",
                   "});",
                   "pm.test(\"response has all TriageApiResponse keys\", () => {",
-                  "  const expectedKeys = [\"case_id\",\"ioc\",\"verdict\",\"recommended_actions\",\"source_summary\",\"score_breakdown\",\"raw_intel\",\"report_html\",\"trace\",\"timings\",\"warnings\",\"execution_mode\",\"fixture_id\"];",
+                  "  const expectedKeys = JSON.parse(pm.collectionVariables.get(\"triageResponseKeys\"));",
                   "  pm.expect(Object.keys(body)).to.include.members(expectedKeys);",
                   "});",
                   "pm.test(\"verdict.severity is a known band\", () => {",
-                  "  const bands = [\"CLEAN\",\"LOW\",\"MEDIUM\",\"HIGH\",\"CRITICAL\"];",
+                  "  const bands = JSON.parse(pm.collectionVariables.get(\"severityBands\"));",
                   "  pm.expect(bands).to.include(body.verdict.severity);",
                   "});",
                   "pm.test(\"verdict.score within [0,1]\", () => {",
@@ -334,6 +362,23 @@
                   "});",
                   "pm.test(\"case_id echoes the request\", () => {",
                   "  pm.expect(body.case_id).to.eql(sent.case_id);",
+                  "});",
+                  "",
+                  "pm.test(\"matches TriageApiResponse schema\", () => {",
+                  "  const schemas = JSON.parse(pm.collectionVariables.get(\"openApiSchemas\") || \"null\");",
+                  "  pm.expect(schemas, \"OpenAPI schemas loaded\").to.be.an(\"object\");",
+                  "  const Ajv = require(\"ajv\");",
+                  "  const ajv = new Ajv({ allErrors: true, strict: false });",
+                  "  const root = { $ref: \"#/components/schemas/TriageApiResponse\",",
+                  "                 components: { schemas: schemas } };",
+                  "  const validate = ajv.compile(root);",
+                  "  const ok = validate(body);",
+                  "  if (!ok) { console.log(\"schema errors:\", JSON.stringify(validate.errors)); }",
+                  "  pm.expect(ok, \"response validates against TriageApiResponse\").to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
                   "});"
                 ]
               }
@@ -397,6 +442,23 @@
                   "pm.test(\"fixture_id is non-empty\", () => {",
                   "  pm.expect(body.fixture_id).to.be.a(\"string\");",
                   "  pm.expect(body.fixture_id.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test(\"matches TriageApiResponse schema\", () => {",
+                  "  const schemas = JSON.parse(pm.collectionVariables.get(\"openApiSchemas\") || \"null\");",
+                  "  pm.expect(schemas, \"OpenAPI schemas loaded\").to.be.an(\"object\");",
+                  "  const Ajv = require(\"ajv\");",
+                  "  const ajv = new Ajv({ allErrors: true, strict: false });",
+                  "  const root = { $ref: \"#/components/schemas/TriageApiResponse\",",
+                  "                 components: { schemas: schemas } };",
+                  "  const validate = ajv.compile(root);",
+                  "  const ok = validate(body);",
+                  "  if (!ok) { console.log(\"schema errors:\", JSON.stringify(validate.errors)); }",
+                  "  pm.expect(ok, \"response validates against TriageApiResponse\").to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
                   "});"
                 ]
               }
@@ -445,6 +507,10 @@
                   "pm.test(\"status is 503\", () => pm.response.to.have.status(503));",
                   "pm.test(\"error.code is DEMO_FIXTURE_MISSING\", () => {",
                   "  pm.expect(body.error.code).to.eql(\"DEMO_FIXTURE_MISSING\");",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
                   "});"
                 ]
               }
@@ -498,7 +564,24 @@
                   "const body = pm.response.json();",
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
                   "pm.test(\"execution_mode is mock\", () => pm.expect(body.execution_mode).to.eql(\"mock\"));",
-                  "pm.test(\"fixture_id is mock\", () => pm.expect(body.fixture_id).to.eql(\"mock\"));"
+                  "pm.test(\"fixture_id is mock\", () => pm.expect(body.fixture_id).to.eql(\"mock\"));",
+                  "",
+                  "pm.test(\"matches TriageApiResponse schema\", () => {",
+                  "  const schemas = JSON.parse(pm.collectionVariables.get(\"openApiSchemas\") || \"null\");",
+                  "  pm.expect(schemas, \"OpenAPI schemas loaded\").to.be.an(\"object\");",
+                  "  const Ajv = require(\"ajv\");",
+                  "  const ajv = new Ajv({ allErrors: true, strict: false });",
+                  "  const root = { $ref: \"#/components/schemas/TriageApiResponse\",",
+                  "                 components: { schemas: schemas } };",
+                  "  const validate = ajv.compile(root);",
+                  "  const ok = validate(body);",
+                  "  if (!ok) { console.log(\"schema errors:\", JSON.stringify(validate.errors)); }",
+                  "  pm.expect(ok, \"response validates against TriageApiResponse\").to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 300ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(300);",
+                  "});"
                 ]
               }
             }
@@ -549,7 +632,11 @@
                 "exec": [
                   "const body = pm.response.json();",
                   "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
-                  "pm.test(\"error.code is IOC_EMPTY\", () => pm.expect(body.error.code).to.eql(\"IOC_EMPTY\"));"
+                  "pm.test(\"error.code is IOC_EMPTY\", () => pm.expect(body.error.code).to.eql(\"IOC_EMPTY\"));",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
                 ]
               }
             }
@@ -597,6 +684,10 @@
                   "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
                   "pm.test(\"case_id round-trips unchanged\", () => {",
                   "  pm.expect(body.case_id).to.eql(pm.variables.get(\"caseId\"));",
+                  "});",
+                  "",
+                  "pm.test(\"responseTime < 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
                   "});"
                 ]
               }
@@ -630,6 +721,41 @@
     {
       "key": "examplePayload",
       "value": "{}"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.collectionVariables.set(\"triageResponseKeys\", JSON.stringify([",
+          "  \"case_id\",\"ioc\",\"verdict\",\"recommended_actions\",\"source_summary\",",
+          "  \"score_breakdown\",\"raw_intel\",\"report_html\",\"trace\",\"timings\",",
+          "  \"warnings\",\"execution_mode\",\"fixture_id\"",
+          "]));",
+          "pm.collectionVariables.set(\"severityBands\", JSON.stringify([",
+          "  \"CLEAN\",\"LOW\",\"MEDIUM\",\"HIGH\",\"CRITICAL\"",
+          "]));",
+          "if (!pm.collectionVariables.get(\"openApiSchemas\")) {",
+          "  pm.sendRequest(`${pm.variables.get(\"baseUrl\")}/openapi.json`, (err, res) => {",
+          "    if (err) { return; }",
+          "    const spec = res.json();",
+          "    pm.collectionVariables.set(\"openApiSchemas\",",
+          "      JSON.stringify(spec.components.schemas));",
+          "  });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "console.log(`\\u2713 Iteration ${pm.info.iteration + 1}/${pm.info.iterationCount} complete`);"
+        ]
+      }
     }
   ]
 }
