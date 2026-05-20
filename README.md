@@ -91,6 +91,7 @@ Minimum pass criteria:
 | [FlowRun_Streamlet_IoC_Triage_Architecture_v2.md](docs/FlowRun_Streamlet_IoC_Triage_Architecture_v2.md) | System architecture and component design |
 | [FlowRun_Streamlet_Build_Prompt.md](docs/FlowRun_Streamlet_Build_Prompt.md) | Original engineering build instructions |
 | [API.md](docs/API.md) | HTTP API reference — endpoints, schemas, error codes, execution modes |
+| [POSTMAN_SETUP.md](demo/POSTMAN_SETUP.md) | First-time Postman setup — install, import, send first request, wire up CI |
 | [POSTMAN_DEMO_INSTRUCTIONS.md](demo/POSTMAN_DEMO_INSTRUCTIONS.md) | Postman demo runbook — click-and-type setup and steps |
 | [POSTMAN_DEMO_SCRIPT.md](demo/POSTMAN_DEMO_SCRIPT.md) | Presenter script for the live Postman demo |
 

@@ -3,6 +3,8 @@
 Click-and-type runbook for the FlowRun IoC Triage Postman demo.
 Narration lives in slide notes (Presenter View) — this file is mechanics only.
 
+> First-time Postman user? Start with [`POSTMAN_SETUP.md`](POSTMAN_SETUP.md), then come back here.
+
 ---
 
 ## Setup
