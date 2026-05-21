@@ -1,6 +1,6 @@
 # 🛡️ FlowRun Streamlet: IoC Triage
 
-**v0.0.33 · LangGraph · LangChain · OpenAI GPT-4o · OpenTelemetry · contract-tested with Postman**
+**v0.0.34 · LangGraph · LangChain · OpenAI GPT-4o · OpenTelemetry · contract-tested with Postman**
 
 A security analyst confronted with a suspicious IP address has a familiar sequence of moves: check VirusTotal, check AbuseIPDB, check AlienVault OTX, sometimes urlscan.io, sometimes NVD, write up the verdict, decide whether to escalate. The process takes ten to twenty-five minutes per indicator, and most of those minutes are spent waiting on browser tabs to load. FlowRun is what happens when you compress that sequence into thirty seconds and add a full trace of every decision.
 
@@ -192,6 +192,17 @@ No other file needs to change.
 
 ## Changelog
 
+**v0.0.34 — JSON API and Postman contract-testing surface**
+- JSON API under `/api/v1/`: `triage` (live or demo), `triage/mock` (schema-only contract check), and `examples/{type}` (canonical sample payloads). Every failure uses a shared `{"error": {...}}` envelope.
+- Demo mode (`FLOWRUN_DEMO_MODE=true`) serves triage from deterministic JSON fixtures — no API keys, no outbound calls. Responses carry `execution_mode` (`live`/`demo`/`mock`) and, for demo/mock, a `fixture_id`.
+- Centralized response adapter (`web/response_mapper.py`) normalizes internal agent state onto the public DTO.
+- Postman collection (`postman_collection.json`): thirty-seven assertions across five folders, with schemas compiled from `/openapi.json` at runtime so the contract never drifts from the code.
+- CI workflow (`.github/workflows/postman.yml`) runs the collection through Newman on every push and pull request, gating the build on an assertion-count floor and zero failures, with JUnit/JSON/HTML artifacts.
+- Per-source enrichment timeouts and partial-result metadata so a slow vendor cannot stall a triage.
+- Docker/Podman is the only supported launch path; `scripts/compose.sh` auto-detects the runtime and `scripts/postman.sh` wraps Newman for smoke and full runs.
+- Dependencies pinned via `requirements.lock` (uv-resolved).
+- New docs: `docs/API.md` API reference, enriched OpenAPI metadata, and a Postman setup guide, demo runbook, and presenter script under `demo/`.
+
 **v0.0.33 — Containerized default deployment + web UI**
 - The container is now the default install path. `docker compose up --build -d` (or the Podman equivalent) builds and starts the stack.
 - FastAPI web UI on port `7777` (`web/app.py`) with an htmx-driven form. Reuses the existing LangGraph; the HTML report formatter is unchanged.
@@ -199,7 +210,6 @@ No other file needs to change.
 - `FLOWRUN_NO_PROMPT=1` skips `getpass()` so the agent fails fast in non-interactive environments instead of hanging.
 - Default OTLP destination is `http://host.docker.internal:4318`, reachable on Docker Desktop and rootless Podman via `extra_hosts: host-gateway`.
 - CLI (`python flowrun_agent.py`) and the Jupyter notebook continue to work unchanged.
-- Postman collection and CI workflow added — contract testing on every push.
 
 **v0.0.32 — Vendor-neutral tracing**
 - Removed Arize-specific dependencies. Added standard OpenTelemetry SDK + Traceloop SDK (OpenLLMetry). Auto-instruments LangChain, LangGraph, and OpenAI.
