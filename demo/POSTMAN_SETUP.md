@@ -63,6 +63,12 @@ The Demo environment supplies `baseUrl`, `iocType`, and
 `expectedExecutionMode=demo`. The collection's assertions read these values —
 they need to know the demo mode is expected in order to check for it.
 
+Suggested values: 
+baseUrl=localhost:7777
+iocType=8.8.8.8
+expectedExecutionMode=demo
+
+
 ## Send the first request
 
 1. In the left nav, expand the collection and open folder **00 — Liveness**.
