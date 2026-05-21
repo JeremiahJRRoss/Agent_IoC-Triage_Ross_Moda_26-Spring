@@ -14,7 +14,7 @@ Most security tools at this layer are tested by the team that built them and val
 
 This repository takes a different position. The contract is the OpenAPI document the server emits at `/openapi.json`. The tests are a Postman collection that derives its schemas from that document at runtime. The CI pipeline runs the same collection on every push. Local development runs the same collection in a Postman GUI. Newman — Postman's headless engine — runs it from a pre-commit hook. Three environments, one artifact, no drift.
 
-If you are here because you want to evaluate the agent, start with the [Quick Start](#quick-start). If you are here because you want to evaluate the testing approach — which is the more interesting story — go straight to [`demo/POSTMAN_SETUP.md`](demo/POSTMAN_SETUP.md).
+If you are here because you want to evaluate the agent, start with the [Quick Start](#quick-start). If you are here because you want to evaluate the testing approach — which is also an interesting story — go straight to [`demo/POSTMAN_SETUP.md`](demo/POSTMAN_SETUP.md).
 
 ---
 
