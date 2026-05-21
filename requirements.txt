@@ -1,3 +1,6 @@
+# Top-level dependency spec. The container and CI install the fully pinned
+# requirements.lock instead — regenerate it after editing this file with:
+#   uv pip compile requirements.txt -o requirements.lock
 langgraph>=0.2
 langchain>=0.3
 langchain-openai>=0.1

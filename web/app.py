@@ -57,7 +57,13 @@ def _example_payload(example_type: ExampleType) -> TriageApiRequest:
 async def lifespan(app: FastAPI):
     # Resolve via module attribute access so test fixtures can monkeypatch the
     # underlying agent.credentials / agent.tracing / agent.graph names.
-    _credentials.resolve_credentials()
+    #
+    # Demo mode serves triage from local fixtures and never makes live
+    # threat-intel calls, so startup must not require API keys — otherwise a
+    # keyless environment (CI, a clean demo box) crashes before binding a port.
+    demo_mode = os.getenv("FLOWRUN_DEMO_MODE", "false").lower() == "true"
+    if not demo_mode:
+        _credentials.resolve_credentials()
     _runtime["trace_endpoint"] = _tracing.init_tracing()
     _runtime["graph"] = _graph.build_graph()
     yield

@@ -1,5 +1,5 @@
-# Build context exclusions. The image installs dependencies from
-# requirements.txt and COPYs only agent/, web/, fixtures/, and
+# Build context exclusions. The image installs dependencies from the pinned
+# requirements.lock and COPYs only agent/, web/, fixtures/, and
 # flowrun_agent.py — everything below is dev-only or never used at runtime.
 
 .git
