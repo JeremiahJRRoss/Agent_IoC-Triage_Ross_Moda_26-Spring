@@ -218,20 +218,31 @@ folder and writes artifacts to `artifacts/postman/`.
 The workflow `.github/workflows/postman.yml` runs on every push and pull
 request. It:
 
-- Boots the API in demo mode (`FLOWRUN_DEMO_MODE=true`) inside the runner.
+- Boots the API in demo mode — a bare `uvicorn` process with
+  `FLOWRUN_DEMO_MODE=true`, started inside the runner (it does not use a
+  container).
 - Polls `/health` until the server is ready.
+- Fails the build if `/health` latency exceeds `HEALTH_LATENCY_THRESHOLD_MS`
+  (1000ms by default).
 - Runs `scripts/postman.sh full`.
-- Gates on the total assertion count and zero failures via `jq`.
-- Uploads the Newman CLI summary, JUnit XML, JSON, and HTML reports as
-  artifacts with `if: always()`, so reports exist even when the run fails.
+- Gates on the total assertion count (`>= 25`) and zero failures via `jq`.
+- Uploads the Newman CLI summary, JUnit XML, JSON, and HTML reports plus
+  `server.log` as artifacts with `if: always()`, so reports exist even when
+  the run fails.
 
-No extra setup is required. Commit and push, then open the **Actions** tab
-on GitHub to watch the `postman-demo` job run.
+No extra setup is required. The workflow is not something you configure in
+GitHub — the YAML file in the repo *is* the configuration. GitHub Actions
+runs any workflow file it finds under `.github/workflows/` automatically.
+Commit and push, then open the **Actions** tab on GitHub to watch the
+`postman-demo` job run.
 
-CI uses Track A semantics — the container runs inside the runner. To point
-CI at a Track B public URL instead, override `BASE_URL` in the workflow's
-`env` block. The default is preferred because it does not depend on
-external uptime.
+CI is Track A by nature — it runs the API inside the runner. Retargeting CI
+at a Track B public URL is not a one-line change: the workflow's `BASE_URL`
+variable only governs the health-poll and latency-check steps, while the
+Newman run reads `baseUrl` from `postman_environment.demo.json`. To point
+the test itself at a public URL, edit that file's `baseUrl` (or pass
+`newman --env-var "baseUrl=<url>"`). The in-runner default is preferred
+anyway — it does not depend on external uptime.
 
 ## Block bad PRs from merging (shared)
 
