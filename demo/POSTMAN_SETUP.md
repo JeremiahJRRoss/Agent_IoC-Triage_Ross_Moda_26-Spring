@@ -171,10 +171,6 @@ behind the URL determines the mode, not the client.
 
 ## Send your first request (shared)
 
-1. In the left nav, expand the collection and open folder **00 — Liveness**.
-2. Click request **GET /health**.
-3. Click **Send**.
-4. Open the **Test Results** tab in the response pane.
 
 A passing request shows a row of green checkmarks, one per assertion, each
 labelled `PASS`. The two most common failures:
