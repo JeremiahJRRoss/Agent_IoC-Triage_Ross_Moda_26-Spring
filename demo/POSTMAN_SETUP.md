@@ -69,23 +69,13 @@ iocType=8.8.8.8
 expectedExecutionMode=demo
 
 
-## Send the first request
-
-1. In the left nav, expand the collection and open folder **00 — Liveness**.
-2. Click request **GET /health**.
-3. Click **Send**.
-4. Open the **Test Results** tab in the response pane.
-
-A passing request shows green checkmarks, one per assertion, each labelled
-`PASS`. The most common failure is a red **connection refused** error — that
-means the container is not running. Re-check the previous step.
 
 ## Run the full collection
 
-1. Click the collection name **FlowRun IoC Triage API** in the left nav.
-2. Click **Run** to open the Collection Runner.
-3. Confirm the environment selector in the Runner reads **Demo**.
-4. Click **Run FlowRun IoC Triage API**.
+1. In the left nav, expand the collection and open folder **End-to-End Tests**.
+2. Click the more menu to the right of the folder **...**.
+3. Select 'Manually Run'
+4. Click **Run**.
 
 Expected outcome: 37 green assertions in roughly one second.
 
