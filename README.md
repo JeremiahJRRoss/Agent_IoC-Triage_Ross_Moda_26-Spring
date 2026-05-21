@@ -1,8 +1,10 @@
 # 🛡️ FlowRun Streamlet: IoC Triage — v0.0.33
 
-Automated Threat Intelligence Triage for Security Operations.
+Automated Threat Intelligence Triage for Security Operations. A standalone version of an agent originally purposed for the FlowRun project.
 
 Built with **LangGraph** + **LangChain** + **OpenAI GPT-4o** + **OpenTelemetry (Traceloop)**.
+
+It also includes an HTTP API with a **demo mode** that serves responses from local fixtures — no API keys or live calls required — purpose-built for demonstrating the agent through Postman. The [Postman collection](postman_collection.json) and [demo slides](demo/FlowRun_Postman_Demo.pptx) are bundled in the repository.
 
 ## What It Does
 
@@ -94,6 +96,8 @@ Minimum pass criteria:
 | [POSTMAN_SETUP.md](demo/POSTMAN_SETUP.md) | First-time Postman setup — install, import, send first request, wire up CI |
 | [POSTMAN_DEMO_INSTRUCTIONS.md](demo/POSTMAN_DEMO_INSTRUCTIONS.md) | Postman demo runbook — click-and-type setup and steps |
 | [POSTMAN_DEMO_SCRIPT.md](demo/POSTMAN_DEMO_SCRIPT.md) | Presenter script for the live Postman demo |
+| [postman_collection.json](postman_collection.json) | Postman collection — importable request set for the API (with `postman_environment.demo.json` / `postman_environment.local.json` environments) |
+| [FlowRun_Postman_Demo.pptx](demo/FlowRun_Postman_Demo.pptx) | Demo slides — presentation deck for the live Postman walkthrough |
 
 ## Project Structure
 
