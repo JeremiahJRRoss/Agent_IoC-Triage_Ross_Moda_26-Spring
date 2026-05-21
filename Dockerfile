@@ -11,8 +11,8 @@ WORKDIR /app
 # Non-root runtime user (UID 10001, no shell, no home).
 RUN useradd --uid 10001 --system --no-create-home --shell /usr/sbin/nologin flowrun
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+COPY requirements.lock .
+RUN pip install -r requirements.lock
 
 COPY agent/ ./agent/
 COPY web/ ./web/
