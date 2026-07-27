@@ -1,8 +1,8 @@
-# 🛡️ FlowRun Streamlet: IoC Triage
+# 🛡️ LangGraph Agent: IoC Triage
 
 **v0.0.34 · LangGraph · LangChain · OpenAI GPT-4o · OpenTelemetry · contract-tested with Postman**
 
-A security analyst confronted with a suspicious IP address has a familiar sequence of moves: check VirusTotal, check AbuseIPDB, check AlienVault OTX, sometimes urlscan.io, sometimes NVD, write up the verdict, decide whether to escalate. The process takes ten to twenty-five minutes per indicator, and most of those minutes are spent waiting on browser tabs to load. FlowRun is what happens when you compress that sequence into thirty seconds and add a full trace of every decision.
+A security analyst confronted with a suspicious IP address has a familiar sequence of moves: check VirusTotal, check AbuseIPDB, check AlienVault OTX, sometimes urlscan.io, sometimes NVD, write up the verdict, decide whether to escalate. The process takes ten to twenty-five minutes per indicator, and most of those minutes are spent waiting on browser tabs to load. This agent compresses that sequence into thirty seconds and adds a full trace of every decision.
 
 This is a working agent. The interesting part — the part this repository exists to make visible — is not the agent itself but the testing surface around it.
 
