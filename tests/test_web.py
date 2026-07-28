@@ -47,7 +47,7 @@ def test_index_renders_form(client):
     resp = client.get("/")
     assert resp.status_code == 200
     html = resp.text
-    assert "FlowRun Streamlet" in html
+    assert "Ross Moda IoC Triage Agent" in html
     assert "<textarea" in html
     assert 'name="ioc"' in html
     assert "/static/style.css" in html

@@ -1,6 +1,6 @@
 """Demo and mock execution-mode fixture loading.
 
-Demo mode (``FLOWRUN_DEMO_MODE=true``) resolves ``POST /api/v1/triage``
+Demo mode (``IOC_TRIAGE_DEMO_MODE=true``) resolves ``POST /api/v1/triage``
 entirely from deterministic fixtures under ``fixtures/demo/``, never calling
 live integrations. Fixture lookup is strict: a missing fixture raises
 ``FileNotFoundError``, which ``web/app.py`` surfaces as

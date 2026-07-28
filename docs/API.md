@@ -1,8 +1,8 @@
-# FlowRun IoC Triage API Reference
+# Ross Moda IoC Triage API Reference
 
 ## Overview
 
-The FlowRun Streamlet IoC Triage API accepts an indicator of compromise (IP,
+The Ross Moda IoC Triage Agent API accepts an indicator of compromise (IP,
 domain, URL, file hash, CVE, or software package) and returns a structured
 threat verdict: a weighted composite score, a severity band, recommended
 actions, and a per-source intel summary. This document is the human-readable
@@ -41,8 +41,8 @@ client never selects the mode directly — the server decides it.
 
 | Mode | Trigger | What runs | `execution_mode` | `fixture_id` |
 |------|---------|-----------|------------------|--------------|
-| `demo` | `FLOWRUN_DEMO_MODE=true` env var | Deterministic fixture lookup under `fixtures/demo/`. No live calls. Missing fixture → `503`. | `"demo"` | fixture key, e.g. `default__ip` |
-| `mock` | Request sent to `POST /api/v1/triage/mock` | Returns the canned `fixtures/demo/mock.json` payload. Independent of `FLOWRUN_DEMO_MODE`. | `"mock"` | `"mock"` |
+| `demo` | `IOC_TRIAGE_DEMO_MODE=true` env var | Deterministic fixture lookup under `fixtures/demo/`. No live calls. Missing fixture → `503`. | `"demo"` | fixture key, e.g. `default__ip` |
+| `mock` | Request sent to `POST /api/v1/triage/mock` | Returns the canned `fixtures/demo/mock.json` payload. Independent of `IOC_TRIAGE_DEMO_MODE`. | `"mock"` | `"mock"` |
 | `live` | Default (no demo env var, normal triage endpoint) | Real LangGraph agent against configured threat-intel integrations. | `"live"` | `null` |
 
 ### Precedence
@@ -52,7 +52,7 @@ client never selects the mode directly — the server decides it.
 
             POST /api/v1/triage
                      │
-       FLOWRUN_DEMO_MODE=true ? ──── yes ──► demo  (fixture or 503, never live)
+       IOC_TRIAGE_DEMO_MODE=true ? ──── yes ──► demo  (fixture or 503, never live)
                      │
                      no
                      │
@@ -111,7 +111,7 @@ curl -s -X POST http://127.0.0.1:7777/api/v1/triage \
 
 Always returns the canned `fixtures/demo/mock.json` payload with
 `execution_mode=mock` and `fixture_id=mock`. Independent of
-`FLOWRUN_DEMO_MODE`. Use it for schema/contract checks that must not depend on
+`IOC_TRIAGE_DEMO_MODE`. Use it for schema/contract checks that must not depend on
 per-IOC fixtures.
 
 - **Request body** — `TriageApiRequest` (JSON). The `ioc` value is required by
@@ -213,7 +213,7 @@ curl -s http://127.0.0.1:7777/health
 # 2. Fetch a canonical example payload
 curl -s http://127.0.0.1:7777/api/v1/examples/ip
 
-# 3. Demo-mode triage (server started with FLOWRUN_DEMO_MODE=true)
+# 3. Demo-mode triage (server started with IOC_TRIAGE_DEMO_MODE=true)
 curl -s -X POST http://127.0.0.1:7777/api/v1/triage \
   -H "Content-Type: application/json" \
   -d '{"ioc":"8.8.8.8","case_id":"CASE-1002"}'

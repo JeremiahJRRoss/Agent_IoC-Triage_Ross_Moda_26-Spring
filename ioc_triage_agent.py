@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# flowrun_agent.py
+# ioc_triage_agent.py
 # ─────────────────────────────────────────────────────────────────────────────
-# FlowRun Streamlet: IoC Triage — CLI Entry Point
+# Ross Moda IoC Triage Agent — CLI Entry Point
 # Interactive terminal loop for triaging Indicators of Compromise.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -14,7 +14,7 @@ def main() -> None:
     print(
         "\n"
         "══════════════════════════════════════════════════════════\n"
-        "  🛡️  FlowRun Streamlet: IoC Triage — v0.0.33\n"
+        "  🛡️  Ross Moda IoC Triage Agent — v0.0.33\n"
         "  Built with LangGraph + LangChain + OpenTelemetry\n"
         "══════════════════════════════════════════════════════════\n"
     )

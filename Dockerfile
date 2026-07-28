@@ -4,12 +4,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    FLOWRUN_NO_PROMPT=1
+    IOC_TRIAGE_NO_PROMPT=1
 
 WORKDIR /app
 
 # Non-root runtime user (UID 10001, no shell, no home).
-RUN useradd --uid 10001 --system --no-create-home --shell /usr/sbin/nologin flowrun
+RUN useradd --uid 10001 --system --no-create-home --shell /usr/sbin/nologin appuser
 
 COPY requirements.lock .
 RUN pip install -r requirements.lock
@@ -17,9 +17,9 @@ RUN pip install -r requirements.lock
 COPY agent/ ./agent/
 COPY web/ ./web/
 COPY fixtures/ ./fixtures/
-COPY flowrun_agent.py .
+COPY ioc_triage_agent.py .
 
-USER flowrun
+USER appuser
 
 EXPOSE 7777
 

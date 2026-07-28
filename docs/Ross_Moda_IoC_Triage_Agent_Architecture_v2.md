@@ -1,12 +1,12 @@
 > **ARCHITECTURAL DESIGN DOCUMENT**
-> **FlowRun Streamlet: IoC Triage**
+> **Ross Moda IoC Triage Agent**
 > System Architecture, Component Design & Integration Reference
 > LangGraph · LangChain · OpenAI GPT-4o · OpenTelemetry · Traceloop (OpenLLMetry)
 
 | **Attribute**         | **Value**                                                    |
 |-----------------------|--------------------------------------------------------------|
 | **Document Type**     | Architectural Design Document (ADD)                          |
-| **Product**           | FlowRun Streamlet: IoC Triage                                |
+| **Product**           | Ross Moda IoC Triage Agent                                |
 | **Version**           | v0.0.33 — Reconciled with codebase                          |
 | **Agentic Framework** | LangGraph 0.2+ (StateGraph)                                  |
 | **LLM Integration**   | LangChain 0.3+ / OpenAI GPT-4o-mini + GPT-4o                |
@@ -15,7 +15,7 @@
 
 ## 1. Document Purpose & Scope
 
-This document describes the internal structure, component design, data flows, and technical decisions of the FlowRun Streamlet: IoC Triage as implemented in codebase version 0.0.32.
+This document describes the internal structure, component design, data flows, and technical decisions of the Ross Moda IoC Triage Agent as implemented in codebase version 0.0.32.
 
 > **Architectural Philosophy**
 > Transparency first — every decision traceable to a named source.
@@ -68,10 +68,10 @@ This document describes the internal structure, component design, data flows, an
 ## 4. Project File Structure
 
 ```
-flowrun-streamlet-ioc-triage-v0.0.33/
+ross-moda-ioc-triage-agent-v0.0.33/
 │
-├── flowrun_agent.py              # CLI entry point — interactive loop
-├── flowrun_agent.ipynb           # Jupyter Notebook interface (8 cells)
+├── ioc_triage_agent.py              # CLI entry point — interactive loop
+├── ioc_triage_agent.ipynb           # Jupyter Notebook interface (8 cells)
 ├── requirements.txt              # Pinned Python dependencies
 ├── .env.template                 # Template (no values)
 ├── .gitignore
@@ -115,10 +115,10 @@ flowrun-streamlet-ioc-triage-v0.0.33/
 │
 └── docs/
     ├── ERD.md
-    ├── FlowRun_Streamlet_Build_Prompt.md
-    ├── FlowRun_Streamlet_IoC_Triage_Architecture_v2.md
-    ├── FlowRun_Streamlet_IoC_Triage_PRD_v2.md
-    ├── FlowRun_Streamlet_IoC_Triage_User_Manual_v2.md
+    ├── Ross_Moda_IoC_Triage_Agent_Build_Prompt.md
+    ├── Ross_Moda_IoC_Triage_Agent_Architecture_v2.md
+    ├── Ross_Moda_IoC_Triage_Agent_PRD_v2.md
+    ├── Ross_Moda_IoC_Triage_Agent_User_Manual_v2.md
     └── v0.0.3_ADDENDUM.md
 ```
 
@@ -322,15 +322,15 @@ PACKAGE_MULTI_WEIGHTS = {osv_multi: 1.00}
 from traceloop.sdk import Traceloop
 
 Traceloop.init(
-    app_name="flowrun-streamlet-ioc-triage",
+    app_name="ross-moda-ioc-triage-agent",
     api_endpoint="http://localhost:4318",   # default; OTEL_EXPORTER_OTLP_ENDPOINT overrides
     disable_batch=True,
     headers=None,
-    resource_attributes={"service.name": "flowrun-streamlet-ioc-triage"},
+    resource_attributes={"service.name": "ross-moda-ioc-triage-agent"},
 )
 ```
 
-Traceloop (OpenLLMetry) installs a global OpenTelemetry `TracerProvider` and auto-instruments LangChain, LangGraph, OpenAI, and other supported libraries. Custom manual spans in `correlation_node` (`flowrun.correlate`) and `severity_node` (`flowrun.severity`) use the standard `opentelemetry.trace.get_tracer()` API and are picked up by the same provider — no extra wiring needed.
+Traceloop (OpenLLMetry) installs a global OpenTelemetry `TracerProvider` and auto-instruments LangChain, LangGraph, OpenAI, and other supported libraries. Custom manual spans in `correlation_node` (`ioc_triage.correlate`) and `severity_node` (`ioc_triage.severity`) use the standard `opentelemetry.trace.get_tracer()` API and are picked up by the same provider — no extra wiring needed.
 
 **10.2 Endpoint Resolution**
 
@@ -384,4 +384,4 @@ No other files change — graph, state, routing, tracing adapt automatically.
 
 ---
 
-*FlowRun Streamlet: IoC Triage — Architecture v3 — Reconciled with codebase v0.0.33*
+*Ross Moda IoC Triage Agent — Architecture v3 — Reconciled with codebase v0.0.33*

@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "FlowRun IoC Triage API",
-    "description": "FlowRun IoC Triage API \u2014 demo-mode contract and behavior checks.\n\nRun against a server started with FLOWRUN_DEMO_MODE=true. Use the bundled environment files (postman_environment.demo.json / .local.json) or pass baseUrl/iocType/expectedExecutionMode as --env-var overrides.\n\nSee docs/POSTMAN_DEMO.md for the runbook.",
+    "name": "Ross Moda IoC Triage API",
+    "description": "Ross Moda IoC Triage API \u2014 demo-mode contract and behavior checks.\n\nRun against a server started with IOC_TRIAGE_DEMO_MODE=true. Use the bundled environment files (postman_environment.demo.json / .local.json) or pass baseUrl/iocType/expectedExecutionMode as --env-var overrides.\n\nSee docs/POSTMAN_DEMO.md for the runbook.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [

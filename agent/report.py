@@ -313,7 +313,7 @@ def format_cli_report(
 
     report = f"""
 {border}
-  FlowRun Streamlet: IoC Triage — THREAT REPORT
+  Ross Moda IoC Triage Agent — THREAT REPORT
 {border}
 TL;DR:    {tldr}
 
@@ -452,7 +452,7 @@ def format_html_report(
 
     html = f"""
     <div style="border:2px solid {colour}; border-radius:8px; padding:16px; margin:8px 0; font-family:sans-serif; max-width:850px;">
-        <h2 style="margin-top:0;">🛡️ FlowRun Streamlet: IoC Triage — Threat Report</h2>
+        <h2 style="margin-top:0;">🛡️ Ross Moda IoC Triage Agent — Threat Report</h2>
         <div style="display:inline-block; background:{colour}; color:#fff; padding:6px 16px; border-radius:4px; font-size:1.3em; font-weight:bold; margin-bottom:8px;">
             {emoji} {severity_band}
         </div>

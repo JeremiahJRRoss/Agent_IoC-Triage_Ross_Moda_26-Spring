@@ -1,12 +1,12 @@
 > **PRODUCT REQUIREMENTS DOCUMENT**
-> **FlowRun Streamlet: IoC Triage**
+> **Ross Moda IoC Triage Agent**
 > Automated Threat Intelligence Triage for Security Operations
 > LangGraph + LangChain + OpenTelemetry + OpenAI GPT-4o
 
 | **Field**             | **Value**                                                    |
 |-----------------------|--------------------------------------------------------------|
 | **Document Type**     | Product Requirements Document (PRD)                          |
-| **Product Name**      | FlowRun Streamlet: IoC Triage                                |
+| **Product Name**      | Ross Moda IoC Triage Agent                                |
 | **Version**           | v0.0.33                                                      |
 | **Status**            | Active — Reconciled with codebase                            |
 | **Owner**             | Security Platform Engineering                                |
@@ -17,7 +17,7 @@
 
 ## 1. Executive Summary
 
-The FlowRun Streamlet: IoC Triage is an AI-powered security operations tool that automates the investigation of Indicators of Compromise (IOCs). Built on LangGraph and LangChain with vendor-neutral OpenTelemetry observability, the agent compresses a 10–25 minute manual analyst workflow into a sub-30-second automated pipeline while producing a full audit trail of every decision made.
+The Ross Moda IoC Triage Agent is an AI-powered security operations tool that automates the investigation of Indicators of Compromise (IOCs). Built on LangGraph and LangChain with vendor-neutral OpenTelemetry observability, the agent compresses a 10–25 minute manual analyst workflow into a sub-30-second automated pipeline while producing a full audit trail of every decision made.
 
 | **Attribute**           | **Value**                                                                                |
 |-------------------------|------------------------------------------------------------------------------------------|
@@ -313,11 +313,11 @@ Each agent run produces a single root trace with spans mirroring the LangGraph e
 
 | **Span Name**         | **Required Attributes**                                                               |
 |-----------------------|---------------------------------------------------------------------------------------|
-| **flowrun.triage**    | ioc.type, ioc.value, severity.band, composite.score, run.duration_ms                  |
-| **flowrun.classify**  | llm.model, llm.prompt_tokens, llm.completion_tokens, ioc.detected_type                |
+| **ioc_triage.triage**    | ioc.type, ioc.value, severity.band, composite.score, run.duration_ms                  |
+| **ioc_triage.classify**  | llm.model, llm.prompt_tokens, llm.completion_tokens, ioc.detected_type                |
 | **tool.\***           | tool.name, tool.input, tool.output_raw, tool.latency_ms, tool.status                  |
-| **flowrun.correlate** | score.{source}, composite.score, weights.active                                       |
-| **flowrun.severity**  | severity.band, verdict.justification, escalation.required                              |
+| **ioc_triage.correlate** | score.{source}, composite.score, weights.active                                       |
+| **ioc_triage.severity**  | severity.band, verdict.justification, escalation.required                              |
 
 
 ## 9. Credential Management
@@ -341,7 +341,7 @@ Resolution order: (1) .env file → (2) os.environ → (3) interactive getpass()
 | **OTEL_EXPORTER_OTLP_ENDPOINT**| OTLP/HTTP endpoint for span export. Default `http://localhost:4318`.                              |
 | **TRACELOOP_BASE_URL**         | Traceloop-style alias for the above (used if the OTEL var is unset).                              |
 | **OTEL_EXPORTER_OTLP_HEADERS** | Comma-separated `key=value` pairs for authenticated collectors (e.g. `Authorization=Bearer ...`). |
-| **OTEL_SERVICE_NAME**          | Override the `service.name` resource attribute. Default `flowrun-streamlet-ioc-triage`.           |
+| **OTEL_SERVICE_NAME**          | Override the `service.name` resource attribute. Default `ross-moda-ioc-triage-agent`.           |
 
 
 ## 10. Acceptance Criteria
@@ -388,4 +388,4 @@ Resolution order: (1) .env file → (2) os.environ → (3) interactive getpass()
 
 ---
 
-*FlowRun Streamlet: IoC Triage — PRD v3 — Reconciled with codebase v0.0.33*
+*Ross Moda IoC Triage Agent — PRD v3 — Reconciled with codebase v0.0.33*

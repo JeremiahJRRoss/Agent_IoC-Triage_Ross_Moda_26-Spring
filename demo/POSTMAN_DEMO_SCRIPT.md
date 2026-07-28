@@ -32,15 +32,15 @@ Forty-five minutes before the demo, with Docker running:
 
 ```bash
 # Build and start the demo-mode server. Substitute podman for docker if you prefer.
-FLOWRUN_DEMO_MODE=true docker compose up --build -d
+IOC_TRIAGE_DEMO_MODE=true docker compose up --build -d
 
 # Confirm liveness. Expect: {"status":"ok","trace_endpoint":"..."}.
 curl -s http://127.0.0.1:7777/health
 ```
 
-Open Postman. Confirm the environment dropdown reads **FlowRun IoC Triage — Demo**. Run the Collection Runner once. Confirm thirty-seven green checks. If any are red, debug now — not during.
+Open Postman. Confirm the environment dropdown reads **Ross Moda IoC Triage — Demo**. Run the Collection Runner once. Confirm thirty-seven green checks. If any are red, debug now — not during.
 
-Open `FlowRun_Postman_Demo.pptx` to slide 1. Switch to Presenter View if you have a second display.
+Open `POSTMAN_DEMO_SLIDES.md` to slide 1. Keep the slide notes open if you want prompts.
 
 Teardown after the demo:
 
@@ -54,7 +54,7 @@ docker compose down
 
 ### What's on screen
 
-Dark navy. Title: *FlowRun IoC Triage API*. Subtitle: *Contract testing with Postman*. Stat strip across the bottom: `v0.0.33  |  37 assertions  |  5 folders  |  ~1s wall time`.
+Dark navy. Title: *Ross Moda IoC Triage API*. Subtitle: *Contract testing with Postman*. Stat strip across the bottom: `v0.0.33  |  37 assertions  |  5 folders  |  ~1s wall time`.
 
 ### Narration
 
@@ -207,7 +207,7 @@ This is the most important beat. Pause for a half-second after delivering it. Le
 
 > "Same collection, Postman's GUI runner. Five folders, thirty-seven assertions, green, about a second. Exactly what `newman run` does in CI."
 
-Alt-tab back to the deck. Advance to slide 5.
+Alt-tab back to the slide notes. Advance to slide 5.
 
 ---
 
@@ -255,7 +255,7 @@ Two columns. Left: three commands to reproduce locally. Right: repo links — th
 
 ### Q: How does demo mode prevent live API calls?
 
-The execution mode is resolved in exactly one place: `web/app.py::triage_api`. When `FLOWRUN_DEMO_MODE=true`, the function short-circuits to `web/demo_mode.py::load_demo_result` and never reaches the LangGraph dispatcher. A missing fixture raises `FileNotFoundError`, which the handler converts to a structured `503 DEMO_FIXTURE_MISSING`. There is no code path from demo mode to a live integration. The CVE fixture-miss test enforces this.
+The execution mode is resolved in exactly one place: `web/app.py::triage_api`. When `IOC_TRIAGE_DEMO_MODE=true`, the function short-circuits to `web/demo_mode.py::load_demo_result` and never reaches the LangGraph dispatcher. A missing fixture raises `FileNotFoundError`, which the handler converts to a structured `503 DEMO_FIXTURE_MISSING`. There is no code path from demo mode to a live integration. The CVE fixture-miss test enforces this.
 
 ### Q: What happens when the OpenAPI document changes?
 
@@ -303,6 +303,6 @@ The last row is the only place a human is structurally required during runtime, 
 - [`POSTMAN_DEMO_INSTRUCTIONS.md`](POSTMAN_DEMO_INSTRUCTIONS.md) — the click-and-type runbook to hold open during the demo
 - [`POSTMAN_SETUP.md`](POSTMAN_SETUP.md) — first-time setup, from clean machine to a green run
 - [`../docs/API.md`](../docs/API.md) — endpoint reference and error codes
-- `FlowRun_Postman_Demo.pptx` — the deck (slide notes carry tight Presenter View prompts)
+- `POSTMAN_DEMO_SLIDES.md` — text-only slide notes for source-reviewable demo prompts
 - `postman_collection.json` — the collection
 - `.github/workflows/postman.yml` — the CI pipeline

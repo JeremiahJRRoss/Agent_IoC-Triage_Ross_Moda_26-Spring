@@ -22,7 +22,7 @@ If you are here because you want to evaluate the agent, start with the [Quick St
 
 The service has two operating modes that share a single Postman collection. The distinction matters before you do anything else.
 
-**Demo mode** (`FLOWRUN_DEMO_MODE=true`) reads triage responses from JSON fixtures baked into the container. The LangGraph agent never runs. No outbound call leaves the container. No API key is required. Responses are deterministic, fast, and identical across machines. This is the mode used in the Postman demo, in CI, on a clean evaluator's laptop, and in any environment where you want to validate the testing pattern itself rather than the threat-intel results. Demo mode exists because the *testing approach* is the contribution, and showing the approach reliably requires that the wire not surprise you.
+**Demo mode** (`IOC_TRIAGE_DEMO_MODE=true`) reads triage responses from JSON fixtures baked into the container. The LangGraph agent never runs. No outbound call leaves the container. No API key is required. Responses are deterministic, fast, and identical across machines. This is the mode used in the Postman demo, in CI, on a clean evaluator's laptop, and in any environment where you want to validate the testing pattern itself rather than the threat-intel results. Demo mode exists because the *testing approach* is the contribution, and showing the approach reliably requires that the wire not surprise you.
 
 **Live mode** is the default and what production uses. The LangGraph agent runs, queries up to nine threat-intelligence APIs in parallel, weights and correlates the responses, and returns a real verdict. Live mode needs five API keys — OpenAI, VirusTotal, AbuseIPDB, OTX, urlscan.io — in a local `.env` file. Live mode is what the testing pattern is *for*; demo mode is how you prove the testing pattern without depending on any vendor during a presentation.
 
@@ -36,7 +36,7 @@ You submit an indicator of compromise — an IP address, a domain, a URL, a file
 
 The pipeline is built on LangGraph (state machine), LangChain (tool wrappers), OpenAI `gpt-4o-mini` (classification, temperature 0.0) and `gpt-4o` (correlation summary, temperature 0.3), and OpenTelemetry through the Traceloop SDK (auto-instrumentation, OTLP/HTTP export). The agent ships as a FastAPI application on port `7777` with a small htmx web UI and a complete JSON API under `/api/v1/`.
 
-For the architecture in full, see [`docs/FlowRun_Streamlet_IoC_Triage_Architecture_v2.md`](docs/FlowRun_Streamlet_IoC_Triage_Architecture_v2.md). For the requirements that drove it, see [`docs/FlowRun_Streamlet_IoC_Triage_PRD_v2.md`](docs/FlowRun_Streamlet_IoC_Triage_PRD_v2.md).
+For the architecture in full, see [`docs/Ross_Moda_IoC_Triage_Agent_Architecture_v2.md`](docs/Ross_Moda_IoC_Triage_Agent_Architecture_v2.md). For the requirements that drove it, see [`docs/Ross_Moda_IoC_Triage_Agent_PRD_v2.md`](docs/Ross_Moda_IoC_Triage_Agent_PRD_v2.md).
 
 ---
 
@@ -49,7 +49,7 @@ The service runs as a container on port `7777`. Works identically with Docker (2
 cp .env.template .env   # then fill in the five required keys
 
 # Build and start, demo mode (no keys needed)
-FLOWRUN_DEMO_MODE=true docker compose up --build -d
+IOC_TRIAGE_DEMO_MODE=true docker compose up --build -d
 
 # Confirm
 curl http://127.0.0.1:7777/health
@@ -57,7 +57,7 @@ curl http://127.0.0.1:7777/health
 
 Open <http://localhost:7777>. Paste an IOC — `8.8.8.8`, `malware.wicar.org`, `CVE-2021-44228`, `npm:postmark-mcp` — and click **Triage**. The report renders inline.
 
-To run in live mode, drop the `FLOWRUN_DEMO_MODE` variable:
+To run in live mode, drop the `IOC_TRIAGE_DEMO_MODE` variable:
 
 ```bash
 docker compose up --build -d
@@ -91,7 +91,7 @@ To set up Postman from a clean machine — including importing the collection, c
 
 ## CI: the same collection, on every push
 
-A GitHub Actions workflow at `.github/workflows/postman.yml` runs `postman_collection.json` against a freshly booted server on every push and every pull request. The job boots `uvicorn` directly with `FLOWRUN_DEMO_MODE=true`, polls `/health` until the FastAPI lifespan hook finishes, asserts the latency budget on `/health`, runs the full collection through Newman with four reporters, and gates the build on two `jq` checks against the JSON report:
+A GitHub Actions workflow at `.github/workflows/postman.yml` runs `postman_collection.json` against a freshly booted server on every push and every pull request. The job boots `uvicorn` directly with `IOC_TRIAGE_DEMO_MODE=true`, polls `/health` until the FastAPI lifespan hook finishes, asserts the latency budget on `/health`, runs the full collection through Newman with four reporters, and gates the build on two `jq` checks against the JSON report:
 
 ```bash
 test "$total"  -ge 25      # the suite must have at least 25 assertions
@@ -121,9 +121,9 @@ The full reference is at [`docs/API.md`](docs/API.md), and the live OpenAPI docu
 | [`demo/POSTMAN_DEMO_INSTRUCTIONS.md`](demo/POSTMAN_DEMO_INSTRUCTIONS.md) | The click-by-click runbook to keep open during the live demo |
 | [`demo/POSTMAN_DEMO_SCRIPT.md`](demo/POSTMAN_DEMO_SCRIPT.md) | The presenter narration, with timing and technical depth |
 | [`docs/API.md`](docs/API.md) | Endpoints, schemas, error codes, execution modes |
-| [`docs/FlowRun_Streamlet_IoC_Triage_PRD_v2.md`](docs/FlowRun_Streamlet_IoC_Triage_PRD_v2.md) | Functional and non-functional requirements |
-| [`docs/FlowRun_Streamlet_IoC_Triage_Architecture_v2.md`](docs/FlowRun_Streamlet_IoC_Triage_Architecture_v2.md) | Layered architecture, state schema, integration design |
-| [`docs/FlowRun_Streamlet_IoC_Triage_User_Manual_v2.md`](docs/FlowRun_Streamlet_IoC_Triage_User_Manual_v2.md) | End-user manual for the web UI |
+| [`docs/Ross_Moda_IoC_Triage_Agent_PRD_v2.md`](docs/Ross_Moda_IoC_Triage_Agent_PRD_v2.md) | Functional and non-functional requirements |
+| [`docs/Ross_Moda_IoC_Triage_Agent_Architecture_v2.md`](docs/Ross_Moda_IoC_Triage_Agent_Architecture_v2.md) | Layered architecture, state schema, integration design |
+| [`docs/Ross_Moda_IoC_Triage_Agent_User_Manual_v2.md`](docs/Ross_Moda_IoC_Triage_Agent_User_Manual_v2.md) | End-user manual for the web UI |
 | [`docs/ERD.md`](docs/ERD.md) | Entity relationships across the pipeline |
 | `postman_collection.json` | The Postman collection itself |
 | `postman_environment.demo.json` / `postman_environment.local.json` | Environment values for demo and live mode |
@@ -134,11 +134,11 @@ The full reference is at [`docs/API.md`](docs/API.md), and the live OpenAPI docu
 ## Project structure
 
 ```
-flowrun-streamlet-ioc-triage/
+ross-moda-ioc-triage-agent/
 ├── compose.yaml              Docker/Podman compose — default deployment
 ├── Dockerfile                Python 3.11-slim, uvicorn on port 7777
-├── flowrun_agent.py          CLI entry point (legacy; the container is the default)
-├── flowrun_agent.ipynb       Jupyter notebook (8 cells, demo-friendly)
+├── ioc_triage_agent.py          CLI entry point (legacy; the container is the default)
+├── ioc_triage_agent.ipynb       Jupyter notebook (8 cells, demo-friendly)
 ├── requirements.txt          Top-level dependencies
 ├── requirements.lock         Pinned tree (uv-resolved)
 │
@@ -194,7 +194,7 @@ No other file needs to change.
 
 **v0.0.34 — JSON API and Postman contract-testing surface**
 - JSON API under `/api/v1/`: `triage` (live or demo), `triage/mock` (schema-only contract check), and `examples/{type}` (canonical sample payloads). Every failure uses a shared `{"error": {...}}` envelope.
-- Demo mode (`FLOWRUN_DEMO_MODE=true`) serves triage from deterministic JSON fixtures — no API keys, no outbound calls. Responses carry `execution_mode` (`live`/`demo`/`mock`) and, for demo/mock, a `fixture_id`.
+- Demo mode (`IOC_TRIAGE_DEMO_MODE=true`) serves triage from deterministic JSON fixtures — no API keys, no outbound calls. Responses carry `execution_mode` (`live`/`demo`/`mock`) and, for demo/mock, a `fixture_id`.
 - Centralized response adapter (`web/response_mapper.py`) normalizes internal agent state onto the public DTO.
 - Postman collection (`postman_collection.json`): thirty-seven assertions across five folders, with schemas compiled from `/openapi.json` at runtime so the contract never drifts from the code.
 - CI workflow (`.github/workflows/postman.yml`) runs the collection through Newman on every push and pull request, gating the build on an assertion-count floor and zero failures, with JUnit/JSON/HTML artifacts.
@@ -207,9 +207,9 @@ No other file needs to change.
 - The container is now the default install path. `docker compose up --build -d` (or the Podman equivalent) builds and starts the stack.
 - FastAPI web UI on port `7777` (`web/app.py`) with an htmx-driven form. Reuses the existing LangGraph; the HTML report formatter is unchanged.
 - `/health` endpoint added for container liveness probes; built-in `HEALTHCHECK` in the image.
-- `FLOWRUN_NO_PROMPT=1` skips `getpass()` so the agent fails fast in non-interactive environments instead of hanging.
+- `IOC_TRIAGE_NO_PROMPT=1` skips `getpass()` so the agent fails fast in non-interactive environments instead of hanging.
 - Default OTLP destination is `http://host.docker.internal:4318`, reachable on Docker Desktop and rootless Podman via `extra_hosts: host-gateway`.
-- CLI (`python flowrun_agent.py`) and the Jupyter notebook continue to work unchanged.
+- CLI (`python ioc_triage_agent.py`) and the Jupyter notebook continue to work unchanged.
 
 **v0.0.32 — Vendor-neutral tracing**
 - Removed Arize-specific dependencies. Added standard OpenTelemetry SDK + Traceloop SDK (OpenLLMetry). Auto-instruments LangChain, LangGraph, and OpenAI.

@@ -42,8 +42,8 @@ osv_tool = OSVTool()
 osv_multi_tool = OSVMultiTool()
 registry_tool = RegistryTool()
 
-ENRICHMENT_SOURCE_TIMEOUT_S = float(os.getenv("FLOWRUN_ENRICHMENT_SOURCE_TIMEOUT_S", "4.0"))
-ENRICHMENT_DEADLINE_S = float(os.getenv("FLOWRUN_ENRICHMENT_DEADLINE_S", "8.0"))
+ENRICHMENT_SOURCE_TIMEOUT_S = float(os.getenv("IOC_TRIAGE_ENRICHMENT_SOURCE_TIMEOUT_S", "4.0"))
+ENRICHMENT_DEADLINE_S = float(os.getenv("IOC_TRIAGE_ENRICHMENT_DEADLINE_S", "8.0"))
 
 
 # ── Regex pre-classification ──────────────────────────────────────────────────
@@ -356,7 +356,7 @@ async def correlation_node(state: AgentState) -> dict:
     # Manual OpenTelemetry span
     if tracer:
         try:
-            with tracer.start_as_current_span("flowrun.correlate") as span:
+            with tracer.start_as_current_span("ioc_triage.correlate") as span:
                 for source, score in breakdown.items():
                     span.set_attribute(f"score.{source}", score)
                 span.set_attribute("composite.score", composite)
@@ -407,7 +407,7 @@ async def severity_node(state: AgentState) -> dict:
     # Manual OpenTelemetry span
     if tracer:
         try:
-            with tracer.start_as_current_span("flowrun.severity") as span:
+            with tracer.start_as_current_span("ioc_triage.severity") as span:
                 span.set_attribute("severity.band", band)
                 span.set_attribute("verdict.justification", justification)
                 span.set_attribute("escalation.required", escalation)

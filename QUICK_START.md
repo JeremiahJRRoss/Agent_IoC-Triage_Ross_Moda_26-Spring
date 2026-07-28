@@ -1,6 +1,6 @@
-# FlowRun Streamlet: IoC Triage — Quick Start Guide
+# Ross Moda IoC Triage Agent — Quick Start Guide
 
-FlowRun ships as a container image with a small web UI on **port 7777**.
+Ross Moda ships as a container image with a small web UI on **port 7777**.
 Everything below works identically with **Docker** or **Podman** — pick one.
 
 ## 1. Prerequisites
@@ -16,8 +16,8 @@ bundles everything.
 ## 2. Extract and enter the project
 
 ```bash
-tar xzf flowrun-streamlet-ioc-triage.tar.gz
-cd flowrun-streamlet-ioc-triage
+tar xzf ross-moda-ioc-triage-agent.tar.gz
+cd ross-moda-ioc-triage-agent
 ```
 
 ## 3. Set up your API keys
@@ -86,12 +86,12 @@ npm:postmark-mcp
 ## 6. Run the Postman demo (optional)
 
 Demo mode serves `POST /api/v1/triage` from local fixtures only — no API keys,
-no live calls. Start the stack with `FLOWRUN_DEMO_MODE=true`:
+no live calls. Start the stack with `IOC_TRIAGE_DEMO_MODE=true`:
 
 ```bash
-FLOWRUN_DEMO_MODE=true docker compose up --build -d
-# Podman:  FLOWRUN_DEMO_MODE=true podman compose up --build -d
-# Wrapper: FLOWRUN_DEMO_MODE=true ./scripts/compose.sh up --build -d
+IOC_TRIAGE_DEMO_MODE=true docker compose up --build -d
+# Podman:  IOC_TRIAGE_DEMO_MODE=true podman compose up --build -d
+# Wrapper: IOC_TRIAGE_DEMO_MODE=true ./scripts/compose.sh up --build -d
 ```
 
 The full demo runbook lives in [`demo/POSTMAN_DEMO_INSTRUCTIONS.md`](demo/POSTMAN_DEMO_INSTRUCTIONS.md).
@@ -118,7 +118,7 @@ To send traces somewhere else, set `OTEL_EXPORTER_OTLP_ENDPOINT` (and optionally
 ```
 # OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318
 # OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer your_token
-# OTEL_SERVICE_NAME=flowrun-streamlet-ioc-triage
+# OTEL_SERVICE_NAME=ross-moda-ioc-triage-agent
 ```
 
 ## Troubleshooting

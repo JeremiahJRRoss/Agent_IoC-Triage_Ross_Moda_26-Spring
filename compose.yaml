@@ -7,10 +7,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
-  flowrun:
+  ioc-triage:
     build: .
-    image: flowrun-streamlet-ioc-triage:0.0.33
-    container_name: flowrun
+    image: ross-moda-ioc-triage-agent:0.0.33
+    container_name: ioc-triage
     restart: unless-stopped
     ports:
       - "7777:7777"
@@ -27,11 +27,11 @@ services:
       # OCI-standard alias for the host's address). Override or unset to
       # disable tracing — tracing failure is non-blocking (NFR-07).
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://host.docker.internal:4318"
-      FLOWRUN_NO_PROMPT: "1"
-      # FLOWRUN_DEMO_MODE=true serves POST /api/v1/triage from local fixtures
+      IOC_TRIAGE_NO_PROMPT: "1"
+      # IOC_TRIAGE_DEMO_MODE=true serves POST /api/v1/triage from local fixtures
       # only — no API keys, no live calls. Set it in your shell or .env:
-      #   FLOWRUN_DEMO_MODE=true docker compose up --build -d
-      FLOWRUN_DEMO_MODE: "${FLOWRUN_DEMO_MODE:-false}"
+      #   IOC_TRIAGE_DEMO_MODE=true docker compose up --build -d
+      IOC_TRIAGE_DEMO_MODE: "${IOC_TRIAGE_DEMO_MODE:-false}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:

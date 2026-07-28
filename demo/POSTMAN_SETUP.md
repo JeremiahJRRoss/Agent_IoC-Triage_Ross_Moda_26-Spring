@@ -33,7 +33,7 @@ The collection works against `live`, `demo`, and `mock`.
 - **Demo mode** reads canned responses from `fixtures/demo/*.json` and needs no keys at all.
 - **Mock mode** is a single canned payload used for schema-only checks.
 
-Precedence is strict and lives in exactly one function (`web/app.py::triage_api`): if `FLOWRUN_DEMO_MODE=true` is set, demo mode wins, and a missing fixture is a hard `503 DEMO_FIXTURE_MISSING` — never a silent fallback to live. This is the test you can rely on: demo cannot quietly become live.
+Precedence is strict and lives in exactly one function (`web/app.py::triage_api`): if `IOC_TRIAGE_DEMO_MODE=true` is set, demo mode wins, and a missing fixture is a hard `503 DEMO_FIXTURE_MISSING` — never a silent fallback to live. This is the test you can rely on: demo cannot quietly become live.
 
 **The collection is a JSON file that runs identically in Postman, in Newman, and in GitHub Actions.**
 Postman's desktop app and Newman — its headless CLI sibling — share the same JavaScript sandbox.
@@ -67,14 +67,14 @@ There is nothing to install on the host except Docker itself.
 From the repository root:
 
 ```bash
-FLOWRUN_DEMO_MODE=true docker compose up --build -d
+IOC_TRIAGE_DEMO_MODE=true docker compose up --build -d
 ```
 
 Three things are happening in that one line:
 
 - **`--build`** tells Compose to build the image from the local `Dockerfile` the first time you run it, then reuse the cached image afterward.
 - **`-d`** detaches the container so you get your shell back.
-- **`FLOWRUN_DEMO_MODE=true`** is read by `compose.yaml` and injected into the container's environment, which the FastAPI app checks at startup. With demo mode on, the app skips credential resolution entirely — it does not look for a `.env` file, does not call `getpass()`, and does not fail when API keys are absent. This is what makes the demo runnable on a clean machine.
+- **`IOC_TRIAGE_DEMO_MODE=true`** is read by `compose.yaml` and injected into the container's environment, which the FastAPI app checks at startup. With demo mode on, the app skips credential resolution entirely — it does not look for a `.env` file, does not call `getpass()`, and does not fail when API keys are absent. This is what makes the demo runnable on a clean machine.
 
 Confirm the service is up:
 
@@ -109,7 +109,7 @@ Sign in at [go.postman.co](https://go.postman.co). Postman drops you into your d
 
 Click **Import** in the upper left. Drag all three files into the dialog. Postman parses them, distinguishes the collection from the environments (collections describe requests; environments describe values to substitute into those requests), and places them in the correct sidebar sections:
 
-- The collection appears under **Collections** as *FlowRun IoC Triage API*.
+- The collection appears under **Collections** as *Ross Moda IoC Triage API*.
 - The two environment files appear under **Environments**.
 
 The distinction between *collection variables* and *environment variables* matters here. Both can be referenced as `{{baseUrl}}` inside a request, and either can supply a value:
@@ -125,7 +125,7 @@ Three variables are environment-level on purpose:
 
 The first two let you point the same collection at different servers and different fixtures; the third is what makes mode-precedence assertable.
 
-Select **FlowRun IoC Triage — Demo** in the environment dropdown. Confirm:
+Select **Ross Moda IoC Triage — Demo** in the environment dropdown. Confirm:
 
 - `baseUrl` reads `http://127.0.0.1:7777`
 - `expectedExecutionMode` reads `demo`
@@ -143,7 +143,7 @@ The Postman app — desktop or web — has two ways to execute a collection:
 
 Both modes share the same execution model, so the question of which to use is purely ergonomic.
 
-Open the Collection Runner. Confirm the environment dropdown reads **FlowRun IoC Triage — Demo**. Click **Run FlowRun IoC Triage API**.
+Open the Collection Runner. Confirm the environment dropdown reads **Ross Moda IoC Triage — Demo**. Click **Run Ross Moda IoC Triage API**.
 
 The runner executes folders top to bottom. In about a second on a modern machine, you should see thirty-seven green checks and a duration in the neighborhood of `1,200ms`.
 
@@ -191,7 +191,7 @@ A GitHub Actions *job* is a sequence of steps executed on a freshly provisioned 
    - Skipping the Docker build cuts roughly thirty seconds off the run.
    - The GitHub runner is already a disposable VM, so the container's isolation guarantees buy nothing.
 
-   The environment variable `FLOWRUN_DEMO_MODE=true` is set at the job level, so the server boots in demo mode and the agent never tries to resolve API keys.
+   The environment variable `IOC_TRIAGE_DEMO_MODE=true` is set at the job level, so the server boots in demo mode and the agent never tries to resolve API keys.
 
 4. **Wait for readiness.** The next step is a polling loop:
    - Thirty attempts maximum.
@@ -311,8 +311,8 @@ All three execute the same collection, against the same kind of server, and repo
 | What you see | Why it's happening | What to do |
 |---|---|---|
 | `ECONNREFUSED` on every Postman request | The container isn't running, or the port mapping is wrong. | `docker compose ps` to confirm; restart with the Step 1 command. |
-| All triage requests return `503 DEMO_FIXTURE_MISSING` | The container started without `FLOWRUN_DEMO_MODE=true`. | Restart with the variable set. |
-| `expectedExecutionMode` assertion fails | The wrong environment is selected in Postman. | Choose **FlowRun IoC Triage — Demo** in the environment dropdown. |
+| All triage requests return `503 DEMO_FIXTURE_MISSING` | The container started without `IOC_TRIAGE_DEMO_MODE=true`. | Restart with the variable set. |
+| `expectedExecutionMode` assertion fails | The wrong environment is selected in Postman. | Choose **Ross Moda IoC Triage — Demo** in the environment dropdown. |
 | Schema assertion fails after a server-side change | A Pydantic model changed; the OpenAPI schema reflects the new shape; the collection just enforced the change. | Decide if the change is intentional. If yes, update the consumers and proceed. If no, revert the model. |
 | Local Newman passes, CI fails | Almost always a timing issue: the server wasn't ready when Newman started. | Read `server.log` in the CI artifacts; if the latency gate failed, the server was slow to boot. |
 | Postman runs the collection but no schema assertions execute | The collection-level pre-request fetch of `/openapi.json` failed silently — usually because `baseUrl` is wrong. | Verify `/openapi.json` returns 200 from your browser using the environment's `baseUrl`. |
@@ -322,5 +322,5 @@ All three execute the same collection, against the same kind of server, and repo
 ## Where to go next
 
 - **[`POSTMAN_DEMO_INSTRUCTIONS.md`](POSTMAN_DEMO_INSTRUCTIONS.md)** — the click-by-click runbook to keep open during a live demo.
-- **[`POSTMAN_DEMO_SCRIPT.md`](POSTMAN_DEMO_SCRIPT.md)** — the presenter narration that pairs with the slide deck.
+- **[`POSTMAN_DEMO_SCRIPT.md`](POSTMAN_DEMO_SCRIPT.md)** — the presenter narration that pairs with the text-only slide notes.
 - **[`../docs/API.md`](../docs/API.md)** — the structured API reference: endpoints, schemas, error codes.

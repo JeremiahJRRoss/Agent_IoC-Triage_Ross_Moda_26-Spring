@@ -1,6 +1,6 @@
 # web/app.py
 # ─────────────────────────────────────────────────────────────────────────────
-# FastAPI web interface for FlowRun Streamlet: IoC Triage.
+# FastAPI web interface for Ross Moda IoC Triage Agent.
 #
 # Default deployment surface. Listens on port 7777, serves a minimal htmx UI
 # at GET /, accepts IOC submissions at POST /triage, and exposes GET /health
@@ -61,7 +61,7 @@ async def lifespan(app: FastAPI):
     # Demo mode serves triage from local fixtures and never makes live
     # threat-intel calls, so startup must not require API keys — otherwise a
     # keyless environment (CI, a clean demo box) crashes before binding a port.
-    demo_mode = os.getenv("FLOWRUN_DEMO_MODE", "false").lower() == "true"
+    demo_mode = os.getenv("IOC_TRIAGE_DEMO_MODE", "false").lower() == "true"
     if not demo_mode:
         _credentials.resolve_credentials()
     _runtime["trace_endpoint"] = _tracing.init_tracing()
@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
 
 
 _API_DESCRIPTION = """\
-FlowRun Streamlet automated IoC triage API.
+Ross Moda IoC Triage Agent automated IoC triage API.
 
 Submit an indicator of compromise (IP, domain, URL, file hash, CVE, or
 software package) and receive a structured threat verdict with a weighted
@@ -81,7 +81,7 @@ composite score, a severity band, and recommended actions.
 The API resolves exactly one execution mode per request. Precedence is
 strict and decided server-side — clients never choose the mode directly:
 
-1. **demo** — when `FLOWRUN_DEMO_MODE=true`, `POST /api/v1/triage` serves
+1. **demo** — when `IOC_TRIAGE_DEMO_MODE=true`, `POST /api/v1/triage` serves
    deterministic fixtures only and never calls live threat-intel APIs. A
    missing fixture is a hard `503 DEMO_FIXTURE_MISSING`, never a silent
    fallthrough to live mode.
@@ -105,7 +105,7 @@ _OPENAPI_TAGS = [
 ]
 
 app = FastAPI(
-    title="FlowRun Streamlet: IoC Triage",
+    title="Ross Moda IoC Triage Agent",
     description=_API_DESCRIPTION,
     version="0.0.33",
     openapi_tags=_OPENAPI_TAGS,
@@ -242,7 +242,7 @@ async def triage_example(example_type: str):
     description=(
         "Runs IoC triage and returns a structured verdict.\n\n"
         "Behavior depends on the resolved execution mode: with\n"
-        "FLOWRUN_DEMO_MODE=true the response is served from a deterministic\n"
+        "IOC_TRIAGE_DEMO_MODE=true the response is served from a deterministic\n"
         "fixture (execution_mode=demo) and a missing fixture is a hard 503;\n"
         "otherwise the live LangGraph agent runs (execution_mode=live)."
     ),
@@ -267,10 +267,10 @@ async def triage_api(request: TriageApiRequest):
         return _error_response(400, "IOC_EMPTY", "IOC must not be empty", case_id=request.case_id)
 
     # Execution mode precedence:
-    # 1) FLOWRUN_DEMO_MODE=true => fixtures only (never live integrations)
+    # 1) IOC_TRIAGE_DEMO_MODE=true => fixtures only (never live integrations)
     # 2) /api/v1/triage/mock => canned fixture response only
     # 3) default / live => real integrations
-    demo_mode = os.getenv("FLOWRUN_DEMO_MODE", "false").lower() == "true"
+    demo_mode = os.getenv("IOC_TRIAGE_DEMO_MODE", "false").lower() == "true"
     if demo_mode:
         try:
             result, fixture_id = load_demo_result(ioc)
@@ -299,7 +299,7 @@ async def triage_api(request: TriageApiRequest):
     description=(
         "Always returns the canned fixtures/demo/mock.json payload with\n"
         "execution_mode=mock and fixture_id=mock. Independent of\n"
-        "FLOWRUN_DEMO_MODE — use it for schema and contract checks that must\n"
+        "IOC_TRIAGE_DEMO_MODE — use it for schema and contract checks that must\n"
         "not depend on per-IOC fixtures."
     ),
     responses={

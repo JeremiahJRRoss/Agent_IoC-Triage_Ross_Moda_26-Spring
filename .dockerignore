@@ -1,6 +1,6 @@
 # Build context exclusions. The image installs dependencies from the pinned
 # requirements.lock and COPYs only agent/, web/, fixtures/, and
-# flowrun_agent.py — everything below is dev-only or never used at runtime.
+# ioc_triage_agent.py — everything below is dev-only or never used at runtime.
 
 .git
 .gitignore
@@ -26,7 +26,7 @@ tests
 docs
 demo
 artifacts
-flowrun_agent.ipynb
+ioc_triage_agent.ipynb
 postman_collection.json
 postman_environment*.json
 *.md

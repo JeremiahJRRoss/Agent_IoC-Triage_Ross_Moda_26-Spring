@@ -9,8 +9,8 @@ jobs:
   postman-demo:
     runs-on: ubuntu-latest
     env:
-      FLOWRUN_DEMO_MODE: "true"
-      FLOWRUN_NO_PROMPT: "1"
+      IOC_TRIAGE_DEMO_MODE: "true"
+      IOC_TRIAGE_NO_PROMPT: "1"
       HEALTH_LATENCY_THRESHOLD_MS: "1000"
       BASE_URL: "http://127.0.0.1:7777"
 
