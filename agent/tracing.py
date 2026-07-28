@@ -15,7 +15,7 @@ import os
 import sys
 
 DEFAULT_OTLP_ENDPOINT = "http://localhost:4318"
-DEFAULT_SERVICE_NAME = "flowrun-streamlet-ioc-triage"
+DEFAULT_SERVICE_NAME = "ross-moda-ioc-triage-agent"
 
 
 def _resolve_endpoint() -> str:

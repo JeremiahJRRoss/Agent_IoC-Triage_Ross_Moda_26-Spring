@@ -1,4 +1,4 @@
-# FlowRun Streamlet: IoC Triage — Entity Relationship Diagram
+# Ross Moda IoC Triage Agent — Entity Relationship Diagram
 
 > Rendered automatically by GitHub via [Mermaid](https://mermaid.js.org/).  
 > Every entity maps to a data structure in the live agent pipeline (v0.0.33).  
@@ -142,7 +142,7 @@ erDiagram
 
     OTEL_TRACE {
         string   trace_id           "OTLP trace ID"
-        string   service_name       "flowrun-streamlet-ioc-triage (resource attribute)"
+        string   service_name       "ross-moda-ioc-triage-agent (resource attribute)"
         datetime exported_at        "When trace was shipped via OTLP/HTTP"
         string   otlp_endpoint      "Resolved OTLP destination, e.g. http://localhost:4318"
     }
@@ -150,7 +150,7 @@ erDiagram
     OTEL_SPAN {
         string  span_id             "OTLP span ID"
         string  parent_span_id      "Null for root span"
-        string  span_name           "flowrun.triage | flowrun.classify | langchain.tool | flowrun.correlate | flowrun.severity"
+        string  span_name           "ioc_triage.triage | ioc_triage.classify | langchain.tool | ioc_triage.correlate | ioc_triage.severity"
         string  span_type           "chain | llm | tool | custom"
         float   latency_ms          "Span duration"
         json    attributes          "OpenTelemetry span attributes"
@@ -318,7 +318,7 @@ erDiagram
 | Entity | Maps To | Description |
 |---|---|---|
 | `OTEL_TRACE` | One OpenTelemetry trace | Root trace created per run via the Traceloop SDK (OpenLLMetry) and exported via OTLP/HTTP. Default destination `http://localhost:4318`. |
-| `OTEL_SPAN` | Individual spans | Auto-instrumented (LangChain/LangGraph/OpenAI by Traceloop) + custom spans (`flowrun.correlate`, `flowrun.severity`) emitted via `opentelemetry.trace.get_tracer()` |
+| `OTEL_SPAN` | Individual spans | Auto-instrumented (LangChain/LangGraph/OpenAI by Traceloop) + custom spans (`ioc_triage.correlate`, `ioc_triage.severity`) emitted via `opentelemetry.trace.get_tracer()` |
 | `SPAN_ATTRIBUTE` | `span.set_attribute(key, value)` | OpenTelemetry-compliant attributes on each span |
 
 ### LLM Configuration
@@ -371,4 +371,4 @@ erDiagram
 
 ---
 
-*FlowRun Streamlet: IoC Triage · ERD v3 · LangGraph + LangChain + OpenAI GPT-4o + OpenTelemetry (Traceloop) · Reconciled with codebase v0.0.33*
+*Ross Moda IoC Triage Agent · ERD v3 · LangGraph + LangChain + OpenAI GPT-4o + OpenTelemetry (Traceloop) · Reconciled with codebase v0.0.33*

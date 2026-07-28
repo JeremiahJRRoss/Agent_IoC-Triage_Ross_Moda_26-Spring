@@ -1,11 +1,11 @@
-# BUILD PROMPT — FlowRun Streamlet: IoC Triage v0.0.33
+# BUILD PROMPT — Ross Moda IoC Triage Agent v0.0.33
 ## Complete Engineering Instructions
 
 ---
 
 ## CONTEXT & YOUR MISSION
 
-You are maintaining a working application called **FlowRun Streamlet: IoC Triage**. This document is the single source of truth for the codebase as of v0.0.33. Reference documents: User Manual v3, PRD v3, Architecture v3.
+You are maintaining a working application called **Ross Moda IoC Triage Agent**. This document is the single source of truth for the codebase as of v0.0.33. Reference documents: User Manual v3, PRD v3, Architecture v3.
 
 ---
 
@@ -58,10 +58,10 @@ ipywidgets>=8.0
 ## PROJECT FILE STRUCTURE
 
 ```
-flowrun-streamlet-ioc-triage-v0.0.33/
+ross-moda-ioc-triage-agent-v0.0.33/
 │
-├── flowrun_agent.py              # CLI entry point
-├── flowrun_agent.ipynb           # Jupyter Notebook (8 cells)
+├── ioc_triage_agent.py              # CLI entry point
+├── ioc_triage_agent.ipynb           # Jupyter Notebook (8 cells)
 ├── requirements.txt
 ├── .env.template
 ├── .gitignore
@@ -230,7 +230,7 @@ class AgentState(TypedDict):
 ```python
 from traceloop.sdk import Traceloop
 
-def init_tracing(app_name='flowrun-streamlet-ioc-triage'):
+def init_tracing(app_name='ross-moda-ioc-triage-agent'):
     endpoint = (
         os.getenv('OTEL_EXPORTER_OTLP_ENDPOINT')
         or os.getenv('TRACELOOP_BASE_URL')
@@ -245,7 +245,7 @@ def init_tracing(app_name='flowrun-streamlet-ioc-triage'):
     return endpoint
 ```
 
-Traceloop installs a global OpenTelemetry `TracerProvider` and auto-instruments LangChain, LangGraph, and OpenAI. Custom manual spans in `correlation_node` (`flowrun.correlate`) and `severity_node` (`flowrun.severity`) use the standard `opentelemetry.trace.get_tracer()` API and are picked up automatically.
+Traceloop installs a global OpenTelemetry `TracerProvider` and auto-instruments LangChain, LangGraph, and OpenAI. Custom manual spans in `correlation_node` (`ioc_triage.correlate`) and `severity_node` (`ioc_triage.severity`) use the standard `opentelemetry.trace.get_tracer()` API and are picked up automatically.
 
 ### 11. MODEL_CONFIG — Single Source of Truth
 ```python
@@ -292,4 +292,4 @@ Bare package names (no prefix) are scanned across 10 ecosystems simultaneously: 
 
 ---
 
-*FlowRun Streamlet: IoC Triage — Build Prompt v3 — Reconciled with codebase v0.0.33*
+*Ross Moda IoC Triage Agent — Build Prompt v3 — Reconciled with codebase v0.0.33*

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Newman wrapper for the FlowRun IoC Triage collection.
+# Newman wrapper for the Ross Moda IoC Triage collection.
 #   smoke - fast subset (Liveness + Examples), for pre-commit hooks
 #   full  - every folder, all reporters, with an assertion summary
 set -euo pipefail

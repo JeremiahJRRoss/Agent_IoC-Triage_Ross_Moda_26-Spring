@@ -10,9 +10,9 @@ The whole demo is four minutes. The walkthrough in Postman is sixty seconds of t
 
 Before you run anything, understand what you are showing.
 
-The FlowRun service has two operating modes that share a single Postman collection. Demo mode is the presentation; live mode is the production. Both execute the same thirty-seven assertions against the same schema. What changes is what sits on the other side of the wire.
+The Ross Moda service has two operating modes that share a single Postman collection. Demo mode is the presentation; live mode is the production. Both execute the same thirty-seven assertions against the same schema. What changes is what sits on the other side of the wire.
 
-**Demo mode** (`FLOWRUN_DEMO_MODE=true`) reads triage responses from JSON files baked into the container at `fixtures/demo/*.json`. The LangGraph agent never runs. No outbound call is made to VirusTotal, AbuseIPDB, OTX, urlscan.io, NVD, or OSV.dev. No API key is required. Responses are deterministic to the millisecond — every assertion behaves identically every time. This is what you run on stage, in CI, and on a clean machine. It exists for one reason: the *testing pattern* is the product of this demo, not the threat-intel results, and showing the pattern requires that the wire doesn't surprise you.
+**Demo mode** (`IOC_TRIAGE_DEMO_MODE=true`) reads triage responses from JSON files baked into the container at `fixtures/demo/*.json`. The LangGraph agent never runs. No outbound call is made to VirusTotal, AbuseIPDB, OTX, urlscan.io, NVD, or OSV.dev. No API key is required. Responses are deterministic to the millisecond — every assertion behaves identically every time. This is what you run on stage, in CI, and on a clean machine. It exists for one reason: the *testing pattern* is the product of this demo, not the threat-intel results, and showing the pattern requires that the wire doesn't surprise you.
 
 **Live mode** is the default and what production uses. The LangGraph agent runs, queries the configured threat-intel APIs in parallel, weights and correlates the responses, and returns a real verdict. Live mode needs five API keys in `.env` and tolerates the realities of free-tier rate limits and occasional vendor outages. Live mode is what the testing pattern is *for*. Demo mode is how you prove the pattern works without depending on any of those vendors during a presentation.
 
@@ -24,14 +24,14 @@ You will present in demo mode. The audience is watching the test infrastructure,
 
 ## Pre-flight (run thirty minutes before)
 
-You need three things alive when the demo starts: a container, a Postman workspace, and a slide deck.
+You need three things alive when the demo starts: a container, a Postman workspace, and text-only slide notes.
 
 ### Container
 
 From the repository root, with Docker running:
 
 ```bash
-FLOWRUN_DEMO_MODE=true docker compose up --build -d
+IOC_TRIAGE_DEMO_MODE=true docker compose up --build -d
 curl -s http://127.0.0.1:7777/health
 ```
 
@@ -45,21 +45,21 @@ Open Postman — desktop app or web client, your choice. Both share state throug
 
 Confirm three things in the Postman window:
 
-1. The collection **FlowRun IoC Triage API** is visible in the left sidebar with its five folders expanded. Click the chevron next to the collection name if they are collapsed.
-2. The environment dropdown in the upper right reads **FlowRun IoC Triage — Demo**. If it reads anything else, click and switch. This single dropdown is the difference between proving demo mode and proving live mode.
+1. The collection **Ross Moda IoC Triage API** is visible in the left sidebar with its five folders expanded. Click the chevron next to the collection name if they are collapsed.
+2. The environment dropdown in the upper right reads **Ross Moda IoC Triage — Demo**. If it reads anything else, click and switch. This single dropdown is the difference between proving demo mode and proving live mode.
 3. The folder `02 — Triage (demo mode)` is expanded so the audience sees the request names when you scroll.
 
 Run the suite once now, with the Collection Runner (opened from the `...` menu on the collection name). Expect thirty-seven green checks in about a second. If anything is red, debug it before the demo, not during.
 
-### Deck
+### Slide notes
 
-Open `FlowRun_Postman_Demo.pptx` to slide 1. Use Presenter View if you have a second display. The slide notes carry tight prompts; this document carries the click sequences.
+Open `POSTMAN_DEMO_SLIDES.md` to slide 1. Keep the slide notes open if you want prompts. The text notes carry tight prompts; this document carries the click sequences.
 
 ---
 
 ## The shape of the next four minutes
 
-Six beats, in order. The deck advances unattended through slides 1–4. After slide 4 you alt-tab to Postman and stay there for the six Postman beats. After the Postman beats you alt-tab back and advance to slides 5–6.
+Six beats, in order. Use the slide notes to step through slides 1–4. After slide 4 you alt-tab to Postman and stay there for the six Postman beats. After the Postman beats you alt-tab back and advance to slides 5–6.
 
 The audience never sees you switch environments, edit a request, or open settings. Everything you click is rehearsed and visible. If you are tempted to improvise, do it after the run-through assertion summary appears green — not before.
 
@@ -67,9 +67,9 @@ The audience never sees you switch environments, edit a request, or open setting
 
 ## Slides 1–4 (no clicks in any external app)
 
-Advance the deck. Read the notes in Presenter View if you need prompts. These slides exist to give the audience the four pillars (liveness, contract, behavior, negative paths), the three definitions (Postman, collection, Newman), and the three checkpoints (pre-commit, pre-push, CI). They prime everything you are about to show.
+Advance the slide notes. Read the notes if you need prompts. These slides exist to give the audience the four pillars (liveness, contract, behavior, negative paths), the three definitions (Postman, collection, Newman), and the three checkpoints (pre-commit, pre-push, CI). They prime everything you are about to show.
 
-**At the end of slide 4, do not advance the deck.** Slide 4 stays projected behind Postman during the entire live walkthrough. Alt-tab to Postman.
+**At the end of slide 4, do not advance the slide notes.** Keep the slide 4 notes visible behind Postman during the live walkthrough if you are screen sharing them. Alt-tab to Postman.
 
 ---
 
@@ -81,7 +81,7 @@ Click the collection name in the left sidebar. The folder tree expands.
 
 The audience sees five folders: `00 — Liveness`, `01 — Examples`, `02 — Triage (demo mode)`, `03 — Triage (mock mode)`, `04 — Negative & contract`. Each folder name maps to one of the four pillars from slide 2. Liveness is the cheapest possible probe — does the server answer? Examples is the fixture endpoint that every triage test chains off. Triage demo mode is the contract test against fixture-backed responses. Triage mock mode is the schema-only check that runs against a canned payload regardless of environment. Negative & contract is the suite of failure modes — empty IOCs, fixture misses, error envelopes.
 
-Point at the environment dropdown in the upper right. Confirm aloud that it reads `FlowRun IoC Triage — Demo`. This is the moment to mention that the same collection runs against `FlowRun IoC Triage — Local` for live mode and the assertions still pass — only the value of `expectedExecutionMode` changes.
+Point at the environment dropdown in the upper right. Confirm aloud that it reads `Ross Moda IoC Triage — Demo`. This is the moment to mention that the same collection runs against `Ross Moda IoC Triage — Local` for live mode and the assertions still pass — only the value of `expectedExecutionMode` changes.
 
 ### Beat 2 — Open the example-chain request (≈10 seconds)
 
@@ -113,9 +113,9 @@ Spend a beat on this one. It is the most demonstrative assertion in the suite.
 
 Cut this beat first if the previous ones ran long.
 
-Click the **Runner** icon in the left sidebar (paper-plane). Select the collection. Click **Run FlowRun IoC Triage API**. In about a second you see thirty-seven green checks at the bottom of the runner. This is the Postman-GUI equivalent of `newman run` — same JavaScript sandbox, same assertions, same outcome. The point is that what your laptop just did is exactly what GitHub Actions does on every push.
+Click the **Runner** icon in the left sidebar (paper-plane). Select the collection. Click **Run Ross Moda IoC Triage API**. In about a second you see thirty-seven green checks at the bottom of the runner. This is the Postman-GUI equivalent of `newman run` — same JavaScript sandbox, same assertions, same outcome. The point is that what your laptop just did is exactly what GitHub Actions does on every push.
 
-Alt-tab back to the deck. Advance to slide 5.
+Alt-tab back to the slide notes. Advance to slide 5.
 
 ---
 
@@ -157,7 +157,7 @@ The container is not running or the port mapping was lost. Recreate it:
 
 ```bash
 docker compose down
-FLOWRUN_DEMO_MODE=true docker compose up --build -d
+IOC_TRIAGE_DEMO_MODE=true docker compose up --build -d
 sleep 2
 curl -s http://127.0.0.1:7777/health
 ```
@@ -166,15 +166,15 @@ Two seconds is enough for the FastAPI lifespan hook to finish. If `/health` stil
 
 ### Wrong environment selected (`execution_mode` assertion fails)
 
-The dropdown drifted, or you opened a fresh Postman window. Switch to **FlowRun IoC Triage — Demo** in the upper-right dropdown and re-Send. Do not edit the assertion — the assertion is correct, the environment is wrong.
+The dropdown drifted, or you opened a fresh Postman window. Switch to **Ross Moda IoC Triage — Demo** in the upper-right dropdown and re-Send. Do not edit the assertion — the assertion is correct, the environment is wrong.
 
 ### All triage requests return `503 DEMO_FIXTURE_MISSING`
 
-The container started without `FLOWRUN_DEMO_MODE=true`. Recreate it with the variable set:
+The container started without `IOC_TRIAGE_DEMO_MODE=true`. Recreate it with the variable set:
 
 ```bash
 docker compose down
-FLOWRUN_DEMO_MODE=true docker compose up --build -d
+IOC_TRIAGE_DEMO_MODE=true docker compose up --build -d
 ```
 
 This is the failure mode that proves the testing pattern works — if demo mode is off, demo-mode fixtures are unreachable, and the suite catches it.
@@ -186,13 +186,13 @@ This is the failure mode that proves the testing pattern works — if demo mode 
 Tear this out (mentally) and keep it visible.
 
 ```
-Pre-flight:    FLOWRUN_DEMO_MODE=true docker compose up --build -d
+Pre-flight:    IOC_TRIAGE_DEMO_MODE=true docker compose up --build -d
                curl -s http://127.0.0.1:7777/health
-               Postman → env = "FlowRun IoC Triage — Demo"
-               PPT → slide 1, Presenter View
+               Postman → env = "Ross Moda IoC Triage — Demo"
+               Slide notes → slide 1
 
 Slides 1 → 2 → 3 → 4              advance only
-End of slide 4: ALT-TAB to Postman, leave deck on slide 4
+End of slide 4: ALT-TAB to Postman, leave notes on slide 4
 
 Postman beats:
   1: click collection → confirm 5 folders + Demo environment
@@ -202,7 +202,7 @@ Postman beats:
   5: "CVE — fixture miss" → Send → 503 / DEMO_FIXTURE_MISSING
   6: Runner → Run full collection                          [optional]
 
-ALT-TAB to deck → slide 5 → 6 → Q&A
+ALT-TAB to slide notes → slide 5 → 6 → Q&A
 
 Teardown:      docker compose down
 ```

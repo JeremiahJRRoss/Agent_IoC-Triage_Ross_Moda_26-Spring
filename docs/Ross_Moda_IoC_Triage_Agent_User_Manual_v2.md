@@ -1,4 +1,4 @@
-> **🛡️ FLOWRUN STREAMLET: IoC TRIAGE**
+> **🛡️ ROSS MODA IOC TRIAGE AGENT**
 > **User Manual & Technical Reference**
 > Automated Threat Intelligence Triage for Security Operations
 
@@ -7,9 +7,9 @@
 | **Status** Active Release | **Observability** OpenTelemetry (Traceloop / OpenLLMetry) |
 
 
-## 1. What is the FlowRun Streamlet: IoC Triage?
+## 1. What is the Ross Moda IoC Triage Agent?
 
-The FlowRun Streamlet: IoC Triage is an AI-powered security analysis tool built on LangGraph and LangChain that automatically investigates Indicators of Compromise (IOCs) — the digital fingerprints left behind by malicious actors, malware, and cyberattacks.
+The Ross Moda IoC Triage Agent is an AI-powered security analysis tool built on LangGraph and LangChain that automatically investigates Indicators of Compromise (IOCs) — the digital fingerprints left behind by malicious actors, malware, and cyberattacks.
 
 When you provide the agent with a suspicious artifact — an IP address, domain name, URL, file hash (MD5, SHA-1, or SHA-256), CVE identifier, or software package name — it acts like a virtual Tier 1 SOC analyst. It simultaneously queries multiple threat intelligence sources, correlates the results, assigns a severity verdict, and delivers a structured, human-readable threat report within seconds.
 
@@ -35,7 +35,7 @@ Beyond traditional IOCs, software supply chain attacks are a growing threat. Mal
 
 ## 3. What the Agent Does
 
-The FlowRun Streamlet compresses a 10-25 minute manual investigation into a sub-30-second automated pipeline with full observability.
+The Ross Moda IoC Triage Agent compresses a 10-25 minute manual investigation into a sub-30-second automated pipeline with full observability.
 
 **3.1 Automated Multi-Source Intelligence Gathering**
 
@@ -211,12 +211,12 @@ URLSCAN_API_KEY=paste_your_key_here
 # Optional — override the default OTLP collector destination:
 # OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318
 # OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer your_token
-# OTEL_SERVICE_NAME=flowrun-streamlet-ioc-triage
+# OTEL_SERVICE_NAME=ross-moda-ioc-triage-agent
 ```
 
 No quotes around values, no trailing spaces. `.env` is gitignored — never share, commit, or paste it into chat.
 
-`.env` is optional: the container starts without it, but live triage needs all five keys. Demo mode (`FLOWRUN_DEMO_MODE=true`) needs none — it serves triage from local fixtures.
+`.env` is optional: the container starts without it, but live triage needs all five keys. Demo mode (`IOC_TRIAGE_DEMO_MODE=true`) needs none — it serves triage from local fixtures.
 
 
 ## 9. Troubleshooting
@@ -231,4 +231,4 @@ No quotes around values, no trailing spaces. `.env` is gitignored — never shar
 
 ---
 
-*FlowRun Streamlet: IoC Triage — User Manual v3 — Reconciled with codebase v0.0.33*
+*Ross Moda IoC Triage Agent — User Manual v3 — Reconciled with codebase v0.0.33*

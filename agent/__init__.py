@@ -1,1 +1,1 @@
-# agent — FlowRun Streamlet: IoC Triage core package
+# agent — Ross Moda IoC Triage Agent core package
